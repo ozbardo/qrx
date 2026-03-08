@@ -1,0 +1,19 @@
+{
+  "name": "qrx",
+  "version": "26.2.14",
+  "type": "module",
+  "description": "generative concatenative vibe coding with qr codes",
+  "main": "index.js",
+  "scripts": {
+    "start": "vite build && node --env-file=.env server.js",
+    "github": "BASE_URL=/qrx.world/ vite build && cp dist/index.html dist/404.html"
+  },
+  "dependencies": {
+    "html-minifier-terser": "^7.2.0",
+    "qrcode": "^1.5.4",
+    "vite": "^7.3.1"
+  },
+  "devDependencies": {
+    "vite-plugin-pwa": "^1.2.0"
+  }
+}
