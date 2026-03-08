@@ -1,29 +1,35 @@
-<!DOCTYPE html>
-<html>
-<head></head>
-<body><main id=A></main>
+<main id=A></main>
 <script id=S>
 // shorthands
 L = location
+LP = L.pathname
 $L = localStorage
+T = 'target'
+TL = 'toLowerCase'
+HR=history.replaceState.bind(history) // TODO: this is now longer than just history.replaceState for # of HRs
 // default indexedDB name
 filename = MAIN = 'main'
-DB = L.pathname.slice(1) || MAIN
-!L.hash && history.replaceState(0, '', `#${MAIN}`)
+DB = LP.slice(1) || MAIN
+S = 'createObjectStore'
+!L.hash && HR(0, '', `#${MAIN}`)
 // default table name
 FILES = 'files'
+// history logging (pathname+hash+query only)
+$H='history'
+log=()=>getDB().then(d=>{let t=+new Date;return queryDB(tx('readwrite',d,$H).put({t,u:LP+L.search+L.hash},t))})
 os = null
 // promise wrapper around DB transactions
 // q: the request
 // f: optionall callback to transform result
 queryDB = (q, f) =>
-  new Promise(r => q['onsuccess'] = e => r(f ? f(e) : e.target.result))
+  new Promise(r => q['onsuccess'] = e => r(f ? f(e) : e[T].result))
 // n: database name
 // t: table name
 getDB = (n = DB, t = FILES) => {
   let q = indexedDB.open(n)
-  q.onupgradeneeded = e => e.target.result.createObjectStore(t)
-  return queryDB(q, e => e.target.result)
+  // create history store too (no keyPath, we supply key on put)
+  q.onupgradeneeded = e => {let r=e[T].result;r[S](t);r[S]($H)}
+  return queryDB(q, e => e[T].result)
 }
 // returns all keys in database
 // q: query
@@ -32,8 +38,7 @@ keys = (q, d) => queryDB(tx('readonly', d).getAllKeys(q))
 // db transaction
 // m: transaction mode
 // d: database
-tx = (m = 'readonly', d = db) => d.transaction(FILES, m).objectStore(FILES)
-write = (v, k, d = db, n = filename) => queryDB(tx('readwrite', d).put(v, k || n))
+tx = (m = 'readonly', d = db, t = FILES) => d.transaction(t, m).objectStore(t)
 // read
 read = async (k, d = db) => {
   d = d.trim ? await getDB(d) : d
@@ -43,7 +48,7 @@ read = async (k, d = db) => {
 // run boot/* files
 boot = async () => {
   db = await getDB()
-  os = DB.toLowerCase() == MAIN.toLowerCase() ? null : await getDB(MAIN)
+  os = DB[TL]() == MAIN[TL]() ? null : await getDB(MAIN)
   let q = IDBKeyRange.bound('boot', 'boot\uffff'),
     b = await keys(q)
   if (os) b = [...new Set([...b, ...await keys(q, os)])]
@@ -57,7 +62,7 @@ boot = async () => {
 run = async () => {
   if (!db) db = await getDB()
   if (!L.hash) {
-    history.replaceState(0, '', `#${MAIN}`)
+    HR(0, '', `#${MAIN}`)
     return run()
   }
   let c, ctx, h = L.hash.slice(1),
@@ -66,6 +71,10 @@ run = async () => {
     p = new URLSearchParams(q),
     v = await read(n) || '',
     app = false // append mode
+
+  // record history
+  q&&log()
+
   // The Machine Tape
   for (let [k, val] of p) {
     val = decodeURIComponent(val)
@@ -108,7 +117,7 @@ ${((val == 'src' ? S.innerText : await read(val)) || '')}`
       } catch (e) { v = app ? v + c : c }
     }
   }
-  if (q) history.replaceState(0, '', '#' + n)
+  if (q) HR(0, '', '#' + n)
   hydrate(v)
 }
 // inject content into DOM and run scripts
@@ -127,7 +136,7 @@ hydrate = h => {
 // p: the prompt to use
 gen = async (ctx, p) => {
   let [k, m, s, h] = ['k', 'm', 's', 'h'].map(x => $L.getItem(x)),
-    msg = ctx + p + (s || '\nONLY THESE TASKS, NO INNOVATING, NO TALKING, NO MARKDOWN, DO NOT ACKNOWLEDGE, BEGIN RAW OUTPUT NOW:'),
+    msg = ctx + p + (s || '\nUSE CONCATENATIVE PROGRAMMING TECHNIQUES, USE CLASSES AND GLOBALS THAT CAN BE UPDATED BY LATER SCRIPTS, ONLY THESE TASKS, NO INNOVATING, NO TALKING, NO MARKDOWN, DO NOT ACKNOWLEDGE, BEGIN RAW OUTPUT NOW:'),
     u = h,
     b = { model: m, messages: [{ role: 'user', content: msg }], stream: false, reasoning: { enabled: false } },
     head = { 'Content-Type': 'application/json' },
@@ -143,5 +152,4 @@ gen = async (ctx, p) => {
 }
 onhashchange = () => run()
 boot()
-</script></body>
-</html>
+</script>
