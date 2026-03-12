@@ -1,0 +1,52 @@
+#chat?e&w&p=TASK: output HTML wireframe for a chatbot
+  - header (id="chat-header")
+    - model name input (id="chat-model")
+    - host input (id="chat-host")
+    - apikey input type=password (id="chat-key")
+  - messages area (id="chat-messages")
+  - footer (id="chat-footer")
+    - resizable textarea (id="chat-input")
+    - submit button (id="chat-submit")
+  - css: flex so messages fills space between header and footer
+  - no javascript
+  - no html/head/body tags
+&w&a=1&p=TASK: output a SCRIPT tag that populates header from localStorage
+  - read localStorage.getItem('m') into input#chat-model value
+  - read localStorage.getItem('h') into input#chat-host value
+  - read localStorage.getItem('k') into input#chat-key value
+  - use var for all variables
+  - run immediately, no DOMContentLoaded wait
+&w&a=1&c=src&p=TASK: output a SCRIPT tag that handles chat with streaming
+  - see CONTEXT for how gen() makes API calls
+  - global var chatHistory = []
+  - function sendMessage():
+    - get value from textarea#chat-input
+    - append user message div to div#chat-messages
+    - push {role: "user", content: text} to chatHistory
+    - build prompt: JSON.stringify(chatHistory) + "\nuser: " + text
+    - read model from input#chat-model, host from input#chat-host, key from input#chat-key
+    - POST to host with stream: true
+    - read response as stream, parse each "data: {...}" line
+    - extract choices[0].delta.content and append to div#chat-messages incrementally
+    - push {role: "assistant", content: fullResponse} to chatHistory
+    - clear textarea#chat-input
+  - bind textarea#chat-input CTRL+ENTER and button#chat-submit to sendMessage()
+  - prevent default form submission (no page reload)
+  - use var for all variables
+  - run immediately, no DOMContentLoaded wait
+&w&a=1&c=src&p=TASK: output a SCRIPT tag that adds [[link]] context transformer plugin
+  - see CONTEXT for how read(k, d) works
+  - add plugin to chatPlugins named "linkParser"
+  - plugin.callback receives (prompt, chatHistory)
+  - find all [[link]] patterns in prompt using regex
+  - handle formats (use %23 as escaped hash in prompts):
+    - [[link]] === [[${DB}%23link]]
+    - [[%23link]] === [[${DB}%23link]]
+    - [[db%23link]] === [[db%23link]]
+  - for each match: replace %23 with actual hash symbol then call read(link, db).then(content => replace [[link]] with <context file="db%23link">content</context>)
+  - console.log each link and resolved content for debugging
+  - wrap in try/catch, silently ignore missing files
+  - return transformed prompt
+  - use var for all variables
+  - run immediately, no DOMContentLoaded wait
+&w

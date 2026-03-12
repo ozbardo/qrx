@@ -1,0 +1,31 @@
+var errorContainer = document.createElement('div');
+errorContainer.style.position = 'fixed';
+errorContainer.style.top = '0';
+errorContainer.style.right = '0';
+errorContainer.style.zIndex = '2147483647';
+errorContainer.style.display = 'flex';
+errorContainer.style.flexDirection = 'column';
+errorContainer.style.pointerEvents = 'none';
+(document.body || document.documentElement).appendChild(errorContainer);
+
+window.createErrorToast = function(msg) {
+    var toast = document.createElement('div');
+    toast.style.background = 'red';
+    toast.style.color = 'white';
+    toast.style.padding = '10px';
+    toast.style.margin = '5px';
+    toast.style.border = '2px solid yellow';
+    toast.style.fontFamily = 'monospace';
+    toast.style.cursor = 'pointer';
+    toast.style.pointerEvents = 'auto';
+    toast.innerText = msg;
+    toast.onclick = function(){
+        this.remove();
+    };
+    errorContainer.appendChild(toast);
+};
+
+window.onerror = function(message, source, lineno, colno, error) {
+    window.createErrorToast(message);
+    return false;
+};

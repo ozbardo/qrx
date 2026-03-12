@@ -1,156 +1,100 @@
 <style>
-  :root {
-    --bg-color: #1e1e1e;
-    --editor-bg: #252526;
-    --text-color: #d4d4d4;
-    --status-bg: #007acc;
-    --status-text: #ffffff;
-    --font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  }
+    :root {
+        --bg-color: #ffffff;
+        --text-color: #000000;
+        --status-bg: #e0e0e0;
+        --status-border: #cccccc;
+    }
+    
+    #app-root {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        width: 100vw;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
 
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+    #editor-area {
+        flex: 1;
+        width: 100%;
+        margin: 0;
+        padding: 1rem;
+        border: none;
+        resize: none;
+        outline: none;
+        font-family: monospace;
+        font-size: 14px;
+        box-sizing: border-box;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+    }
 
-  body, html {
-    height: 100%;
-    overflow: hidden;
-    background-color: var(--bg-color);
-    font-family: var(--font-family);
-  }
-
-  #wireframe-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    width: 100vw;
-  }
-
-  #editor {
-    flex: 1;
-    width: 100%;
-    background-color: var(--editor-bg);
-    color: var(--text-color);
-    border: none;
-    resize: none;
-    padding: 1rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    outline: none;
-    font-family: var(--font-family);
-  }
-
-  #status {
-    height: 25px;
-    background-color: var(--status-bg);
-    color: var(--status-text);
-    display: flex;
-    align-items: center;
-    padding: 0 10px;
-    font-size: 0.8rem;
-    white-space: nowrap;
-    justify-content: space-between;
-  }
-
-  #char-count-placeholder {
-    opacity: 0.9;
-  }
+    #status-bar {
+        flex: 0 0 auto;
+        padding: 5px 10px;
+        background-color: var(--status-bg);
+        border-top: 1px solid var(--status-border);
+        font-family: sans-serif;
+        font-size: 12px;
+        display: flex;
+        justify-content: flex-end;
+    }
 </style>
 
-<div id="wireframe-container">
-  <textarea id="editor" placeholder="Type here..."></textarea>
-  <div id="status">
-    <span>Ln 1, Col 1</span>
-    <span id="char-count-placeholder">0 chars</span>
-  </div>
+<div id="app-root">
+    <textarea id="editor-area" placeholder="Start typing..."></textarea>
+    <div id="status-bar">
+        <span id="char-count-label">Characters: <span id="char-count-value">0</span></span>
+    </div>
 </div><script>
-  var editor = document.getElementById('editor');
-  var statusChar = document.getElementById('char-count-placeholder');
-  var filename = window.location.hash.replace('#', '');
-  var debounceTimer = null;
+    var area = document.getElementById('editor-area');
 
-  var updateCharCount = function() {
-    statusChar.textContent = editor.value.length + ' chars';
-  };
+    var load = function() {
+        read(name).then(function(val) {
+            area.value = val;
+            area.focus();
+        });
+    };
 
-  var loadContent = function() {
-    if (filename) {
-      read(filename).then(function(v) {
-        editor.value = v;
-        updateCharCount();
-        editor.focus();
-      });
-    }
-  };
+    var save = function() {
+        write(area.value, name).then(function() {});
+    };
 
-  var saveContent = function() {
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-    debounceTimer = setTimeout(function() {
-      write(editor.value, filename);
-    }, 500);
-  };
-
-  editor.addEventListener('input', function() {
-    updateCharCount();
-    saveContent();
-  });
-
-  window.addEventListener('hashchange', function() {
-    filename = window.location.hash.replace('#', '');
-    loadContent();
-  });
-
-  loadContent();
+    area.oninput = save;
+    
+    window.onhashchange = load;
+    
+    load();
 </script><script>
-  var editor = document.getElementById('editor');
-  var statusDiv = document.getElementById('status');
+    var charDisplay = document.getElementById('char-count-value');
+    var labelContainer = document.getElementById('char-count-label');
+    
+    var byteSep = document.createElement('span');
+    byteSep.innerText = " | Bytes: ";
+    labelContainer.appendChild(byteSep);
+    
+    var byteDisplay = document.createElement('span');
+    byteDisplay.innerText = "0";
+    labelContainer.appendChild(byteDisplay);
 
-  var updateStatus = function() {
-    var value = editor.value;
-    var charCount = value.length;
-    var byteSize = new Blob([value]).size;
-    statusDiv.innerHTML = '<span>Ln 1, Col ' + (charCount + 1) + '</span><span>Chars: ' + charCount + ' | Bytes: ' + byteSize + '</span>';
-  };
+    var countBytes = function(s) {
+        return new Blob([s]).size;
+    };
 
-  editor.addEventListener('input', updateStatus);
-  updateStatus();
-</script><script>
-  var editor = document.getElementById('editor');
-  var statusDiv = document.getElementById('status');
-  var filename = window.location.hash.replace('#', '');
-  var channel = new BroadcastChannel('qrx_edit');
+    var updateStatus = function() {
+        var val = area.value;
+        charDisplay.innerText = val.length;
+        byteDisplay.innerText = countBytes(val);
+    };
 
-  var updateStatus = function() {
-    var value = editor.value;
-    var charCount = value.length;
-    var byteSize = new Blob([value]).size;
-    statusDiv.innerHTML = '<span>Ln 1, Col ' + (charCount + 1) + '</span><span>Chars: ' + charCount + ' | Bytes: ' + byteSize + '</span>';
-  };
-
-  editor.addEventListener('input', function() {
-    updateStatus();
-    channel.postMessage({filename: filename});
-  });
-
-  channel.onmessage = function(event) {
-    if (event.data.filename === filename) {
-      read(filename).then(function(v) {
-        editor.value = v;
+    var _oldInput = area.oninput;
+    area.oninput = function() {
+        if (_oldInput) _oldInput();
         updateStatus();
-      });
-    }
-  };
+    };
 
-  updateStatus();
-</script><script>
-  var syncInit = function() {
-    if (typeof connectSync === 'function') {
-      connectSync();
-    }
-  };
-  syncInit();
+    updateStatus();
 </script>

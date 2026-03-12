@@ -1,0 +1,198 @@
+<style>
+#chat-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+}
+#chat-header {
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  gap: 10px;
+}
+#chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  background-color: #ffffff;
+}
+#chat-footer {
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #ccc;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+#chat-input {
+  flex: 1;
+  resize: vertical;
+  min-height: 40px;
+}
+</style>
+
+<div id="chat-layout">
+  <header id="chat-header">
+    <input type="text" id="chat-model" placeholder="Model Name">
+    <input type="text" id="chat-host" placeholder="Host">
+    <input type="password" id="chat-key" placeholder="API Key">
+  </header>
+  
+  <main id="chat-messages">
+    <!-- Chat messages will appear here -->
+  </main>
+  
+  <footer id="chat-footer">
+    <textarea id="chat-input" placeholder="Type your message..."></textarea>
+    <button id="chat-submit">Submit</button>
+  </footer>
+</div><script>
+var m = localStorage.getItem('m');
+var h = localStorage.getItem('h');
+var k = localStorage.getItem('k');
+if (m) document.getElementById('chat-model').value = m;
+if (h) document.getElementById('chat-host').value = h;
+if (k) document.getElementById('chat-key').value = k;
+</script><script>
+var chatHistory = [];
+
+function sendMessage() {
+  var inputEl = document.getElementById('chat-input');
+  var text = inputEl.value;
+  if (!text) return;
+
+  var messagesEl = document.getElementById('chat-messages');
+
+  var userDiv = document.createElement('div');
+  userDiv.style.fontWeight = 'bold';
+  userDiv.style.marginTop = '10px';
+  userDiv.appendChild(document.createTextNode('User: ' + text));
+  messagesEl.appendChild(userDiv);
+
+  chatHistory.push({ role: "user", content: text });
+
+  var prompt = JSON.stringify(chatHistory) + "\nuser: " + text;
+
+  var model = document.getElementById('chat-model').value;
+  var host = document.getElementById('chat-host').value;
+  var key = document.getElementById('chat-key').value;
+
+  inputEl.value = '';
+
+  var assistantDiv = document.createElement('div');
+  assistantDiv.style.marginTop = '10px';
+  assistantDiv.style.backgroundColor = '#f9f9f9';
+  assistantDiv.style.padding = '10px';
+  messagesEl.appendChild(assistantDiv);
+
+  var fullResponse = "";
+
+  fetch(host, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + key
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: chatHistory,
+      prompt: prompt,
+      stream: true
+    })
+  }).then(function(response) {
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder('utf-8');
+    var buffer = '';
+
+    function readStream() {
+      reader.read().then(function(result) {
+        if (result.done) {
+          chatHistory.push({ role: "assistant", content: fullResponse });
+          return;
+        }
+        
+        buffer += decoder.decode(result.value, { stream: true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop(); 
+
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (line.indexOf('data: ') === 0) {
+            var dataStr = line.substring(6).trim();
+            if (dataStr === '[DONE]') continue;
+            try {
+              var data = JSON.parse(dataStr);
+              if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+                var content = data.choices[0].delta.content;
+                fullResponse += content;
+                assistantDiv.appendChild(document.createTextNode(content));
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+              }
+            } catch (e) {}
+          }
+        }
+        readStream();
+      }).catch(function(err) {
+        console.error('Stream read error', err);
+      });
+    }
+    readStream();
+  }).catch(function(err) {
+    console.error('Fetch error', err);
+  });
+}
+
+document.getElementById('chat-submit').addEventListener('click', function(e) {
+  e.preventDefault();
+  sendMessage();
+});
+
+document.getElementById('chat-input').addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+</script><script>
+if (typeof window.chatPlugins === 'undefined') {
+  window.chatPlugins = [];
+}
+window.chatPlugins.push({
+  name: "linkParser",
+  callback: async function(prompt, chatHistory) {
+    var matches = prompt.match(/\[\[(.*?)\]\]/g);
+    if (!matches) return prompt;
+    
+    var newPrompt = prompt;
+    for (var i = 0; i < matches.length; i++) {
+      var full = matches[i];
+      var inner = full.slice(2, -2);
+      
+      var db = typeof DB !== 'undefined' ? DB : "";
+      var link = inner;
+      
+      var hashIdx = inner.indexOf('#');
+      if (hashIdx === 0) {
+        link = inner.substring(1);
+      } else if (hashIdx > 0) {
+        db = inner.substring(0, hashIdx);
+        link = inner.substring(hashIdx + 1);
+      }
+      
+      link = link.replace(/\\#/g, '#').replace(/%23/g, '#');
+      db = db.replace(/\\#/g, '#').replace(/%23/g, '#');
+      
+      try {
+        var content = await read(link, db);
+        console.log("Resolved link:", full, content);
+        var replaceTag = '<context file="' + db + '#' + link + '">' + content + '</context>';
+        newPrompt = newPrompt.replace(full, replaceTag);
+      } catch (e) {
+      }
+    }
+    return newPrompt;
+  }
+});
+</script>
