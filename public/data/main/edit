@@ -1,0 +1,156 @@
+<style>
+  :root {
+    --bg-color: #1e1e1e;
+    --editor-bg: #252526;
+    --text-color: #d4d4d4;
+    --status-bg: #007acc;
+    --status-text: #ffffff;
+    --font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body, html {
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-color);
+    font-family: var(--font-family);
+  }
+
+  #wireframe-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  #editor {
+    flex: 1;
+    width: 100%;
+    background-color: var(--editor-bg);
+    color: var(--text-color);
+    border: none;
+    resize: none;
+    padding: 1rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    outline: none;
+    font-family: var(--font-family);
+  }
+
+  #status {
+    height: 25px;
+    background-color: var(--status-bg);
+    color: var(--status-text);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    justify-content: space-between;
+  }
+
+  #char-count-placeholder {
+    opacity: 0.9;
+  }
+</style>
+
+<div id="wireframe-container">
+  <textarea id="editor" placeholder="Type here..."></textarea>
+  <div id="status">
+    <span>Ln 1, Col 1</span>
+    <span id="char-count-placeholder">0 chars</span>
+  </div>
+</div><script>
+  var editor = document.getElementById('editor');
+  var statusChar = document.getElementById('char-count-placeholder');
+  var filename = window.location.hash.replace('#', '');
+  var debounceTimer = null;
+
+  var updateCharCount = function() {
+    statusChar.textContent = editor.value.length + ' chars';
+  };
+
+  var loadContent = function() {
+    if (filename) {
+      read(filename).then(function(v) {
+        editor.value = v;
+        updateCharCount();
+        editor.focus();
+      });
+    }
+  };
+
+  var saveContent = function() {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    debounceTimer = setTimeout(function() {
+      write(editor.value, filename);
+    }, 500);
+  };
+
+  editor.addEventListener('input', function() {
+    updateCharCount();
+    saveContent();
+  });
+
+  window.addEventListener('hashchange', function() {
+    filename = window.location.hash.replace('#', '');
+    loadContent();
+  });
+
+  loadContent();
+</script><script>
+  var editor = document.getElementById('editor');
+  var statusDiv = document.getElementById('status');
+
+  var updateStatus = function() {
+    var value = editor.value;
+    var charCount = value.length;
+    var byteSize = new Blob([value]).size;
+    statusDiv.innerHTML = '<span>Ln 1, Col ' + (charCount + 1) + '</span><span>Chars: ' + charCount + ' | Bytes: ' + byteSize + '</span>';
+  };
+
+  editor.addEventListener('input', updateStatus);
+  updateStatus();
+</script><script>
+  var editor = document.getElementById('editor');
+  var statusDiv = document.getElementById('status');
+  var filename = window.location.hash.replace('#', '');
+  var channel = new BroadcastChannel('qrx_edit');
+
+  var updateStatus = function() {
+    var value = editor.value;
+    var charCount = value.length;
+    var byteSize = new Blob([value]).size;
+    statusDiv.innerHTML = '<span>Ln 1, Col ' + (charCount + 1) + '</span><span>Chars: ' + charCount + ' | Bytes: ' + byteSize + '</span>';
+  };
+
+  editor.addEventListener('input', function() {
+    updateStatus();
+    channel.postMessage({filename: filename});
+  });
+
+  channel.onmessage = function(event) {
+    if (event.data.filename === filename) {
+      read(filename).then(function(v) {
+        editor.value = v;
+        updateStatus();
+      });
+    }
+  };
+
+  updateStatus();
+</script><script>
+  var syncInit = function() {
+    if (typeof connectSync === 'function') {
+      connectSync();
+    }
+  };
+  syncInit();
+</script>

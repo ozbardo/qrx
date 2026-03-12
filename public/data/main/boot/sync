@@ -1,0 +1,79 @@
+(function() {
+  window.FOG_URL = localStorage.getItem('FOG_URL') || (location.protocol === 'http:' ? location.protocol + '//' + location.hostname + ':3000' : '');
+  window.SYNC_KEY = localStorage.getItem('SYNC_KEY');
+  window.CLIENT_ID = Math.random().toString(36).slice(2);
+
+  const _read = window.read;
+  const _write = window.write;
+
+  window.write = async (v, k, d = db, n = filename) => {
+    const key = k || n || filename;
+    const current = await _read(k, d);
+    if (current === v) return;
+
+    await _write(v, k, d, n);
+
+    const ns = (d && typeof d === 'object') ? d.name : (d || DB);
+    try {
+      await fetch(window.FOG_URL + '/write', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': window.SYNC_KEY
+        },
+        body: JSON.stringify({
+          namespace: ns,
+          key: key,
+          value: v,
+          clientId: window.CLIENT_ID
+        })
+      });
+    } catch (e) {}
+  };
+
+  window.read = async (k, d = db) => {
+    const ns = (d && typeof d === 'object') ? d.name : (d || DB);
+    const key = k || filename;
+
+    try {
+      const res = await fetch(window.FOG_URL + '/read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': window.SYNC_KEY
+        },
+        body: JSON.stringify({
+          namespace: ns,
+          key: key
+        })
+      });
+      const data = await res.json();
+      const val = data.value;
+
+      if (val !== undefined && val !== null) {
+        await _write(val, key, d);
+        return val;
+      }
+    } catch (e) {}
+
+    return _read(k, d);
+  };
+})();(function() {
+  window.syncBus = new BroadcastChannel('qrx_sync');
+  window.syncBus.onmessage = function(event) {
+    if (event.data.namespace === DB && event.data.key === filename && event.data.clientId !== window.CLIENT_ID) {
+      location.reload();
+    }
+  };
+
+  if (window === window.top && !window.top.qrx_sse) {
+    window.top.qrx_sse = true;
+    var es = new EventSource(window.FOG_URL + '/stream?auth=' + window.SYNC_KEY);
+    es.onmessage = function(event) {
+      try {
+        var data = JSON.parse(event.data);
+        window.syncBus.postMessage(data);
+      } catch (e) {}
+    };
+  }
+})();

@@ -6,23 +6,28 @@ LP = L.pathname
 $L = localStorage
 T = 'target'
 TL = 'toLowerCase'
-HR=history.replaceState.bind(history) // TODO: this is now longer than just history.replaceState for # of HRs
+HR=history.replaceState.bind(history)
+
 // default indexedDB name
-filename = MAIN = 'main'
+fn = MAIN = 'main'
 DB = LP.slice(1) || MAIN
 S = 'createObjectStore'
 !L.hash && HR(0, '', `#${MAIN}`)
+
 // default table name
 FILES = 'files'
+
 // history logging (pathname+hash+query only)
 $H='history'
 log=()=>getDB().then(d=>{let t=+new Date;return queryDB(tx('readwrite',d,$H).put({t,u:LP+L.search+L.hash},t))})
 os = null
+
 // promise wrapper around DB transactions
 // q: the request
 // f: optionall callback to transform result
 queryDB = (q, f) =>
   new Promise(r => q['onsuccess'] = e => r(f ? f(e) : e[T].result))
+
 // n: database name
 // t: table name
 getDB = (n = DB, t = FILES) => {
@@ -31,20 +36,23 @@ getDB = (n = DB, t = FILES) => {
   q.onupgradeneeded = e => {let r=e[T].result;r[S](t);r[S]($H)}
   return queryDB(q, e => e[T].result)
 }
+
 // returns all keys in database
 // q: query
 // d: database
 keys = (q, d) => queryDB(tx('readonly', d).getAllKeys(q))
+
 // db transaction
 // m: transaction mode
 // d: database
 tx = (m = 'readonly', d = db, t = FILES) => d.transaction(t, m).objectStore(t)
-// read
+write=(v,k,d=db,n=fn)=>queryDB(tx('readwrite',d).put(v,k||n))
 read = async (k, d = db) => {
   d = d.trim ? await getDB(d) : d
-  let v = await queryDB(tx('readonly', d).get(k || filename))
+  let v = await queryDB(tx('readonly', d).get(k || fn))
   return !v && d == db && os ? read(k, os) : v
 }
+
 // run boot/* files
 boot = async () => {
   db = await getDB()
@@ -58,6 +66,7 @@ boot = async () => {
   }
   run()
 }
+
 // run the os
 run = async () => {
   if (!db) db = await getDB()
@@ -67,7 +76,7 @@ run = async () => {
   }
   let c, ctx, h = L.hash.slice(1),
     [n, q] = h.split('?'),
-    f = filename = n,
+    f = fn = n,
     p = new URLSearchParams(q),
     v = await read(n) || '',
     app = false // append mode
@@ -120,6 +129,7 @@ ${((val == 'src' ? S.innerText : await read(val)) || '')}`
   if (q) HR(0, '', '#' + n)
   hydrate(v)
 }
+
 // inject content into DOM and run scripts
 // h: html content to inject
 hydrate = h => {
@@ -131,6 +141,7 @@ hydrate = h => {
     o.replaceWith(s)
   })
 }
+
 // Vibe coding
 // ctx: extra context
 // p: the prompt to use
