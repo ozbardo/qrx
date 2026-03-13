@@ -1,0 +1,37 @@
+#reader?e&w&p=TASK: output HTML wireframe for an RSS reader
+  - flex row container, full height 100vh
+  - sidebar: header, add-feed input type url + submit button (must be type="button", DO NOT wrap anything in a form tag)
+  - nav filters: list items for All, Unread, Bookmarked
+  - empty feeds-list div
+  - main-content: header with current filter title and refresh button (must be type="button"), empty articles-list div
+  - basic card css for articles
+  - no javascript, just HTML and CSS
+&w&a=1&c=src&p=TASK: output a SCRIPT tag to manage global state
+  - the global functions read and write are available
+  - strictly use var or attach to window for variables
+  - var rssFeeds = new Array(); var rssState = new Object();
+  - run an async IIFE immediately (do not wait for DOMContentLoaded)
+  - inside IIFE: var rawFeeds = await read('config/rss/feeds'); if(rawFeeds) rssFeeds = JSON.parse(rawFeeds);
+  - inside IIFE: var rawState = await read('config/rss/state'); if(rawState) rssState = JSON.parse(rawState);
+  - create window.saveFeeds = async function() { await write(JSON.stringify(rssFeeds), 'config/rss/feeds'); }
+  - create window.saveState = async function() { await write(JSON.stringify(rssState), 'config/rss/state'); }
+&w&a=1&p=TASK: output a SCRIPT tag for the fetch engine
+  - bind the add-feed button click event: call event.preventDefault(), grab the input value, push to rssFeeds, call window.saveFeeds(), clear input, and call window.renderFeeds()
+  - create window.renderFeeds(): clear feeds-list div, loop rssFeeds using a for loop, create a div for each with the url and a delete button.
+  - delete button click: removes from rssFeeds, calls window.saveFeeds(), and calls window.renderFeeds()
+  - create window.fetchAll = async function(): loop rssFeeds using a for loop, await fetch from window.FOG_URL + '/proxy%3Furl=' + encodeURIComponent(url)
+  - use native DOMParser to parse text/xml, extract title, link, pubDate, description. Combine into a flat array, sort by date.
+  - await write(JSON.stringify(articles), 'config/rss/cache')
+  - catch fetch errors silently and fallback to reading from cache
+  - replace %3F with question mark symbol
+&w&a=1&p=TASK: output a SCRIPT tag to render articles
+  - create window.renderArticles = async function(filterName)
+  - var rawCache = await read('config/rss/cache'); var cached = JSON.parse(rawCache);
+  - clear articles-list div
+  - loop cached articles using a for loop. check rssState to see if it matches filterName. if filter is Unread and it is read, skip.
+  - build DOM card, add Toggle Read and Toggle Bookmark buttons.
+  - button clicks: update rssState, call window.saveState(), and call window.renderArticles(filterName)
+  - bind sidebar nav filters to call window.renderArticles passing the clicked filter name
+  - bind main refresh button to call window.fetchAll() then window.renderArticles('All')
+  - call window.renderFeeds() and window.renderArticles('All') at the end to initialize
+&w

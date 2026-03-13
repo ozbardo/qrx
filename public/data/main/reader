@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSS Reader</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #ffffff;
+    color: #333333;
+  }
+  
+  .container {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+  }
+  
+  .sidebar {
+    width: 300px;
+    background-color: #f7f9fa;
+    border-right: 1px solid #e1e4e8;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sidebar-header {
+    margin-top: 0;
+    margin-bottom: 24px;
+    font-size: 20px;
+    color: #24292e;
+  }
+  
+  .add-feed-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  
+  .add-feed-controls input[type="url"] {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #d1d5da;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .add-feed-controls button {
+    padding: 8px 16px;
+    background-color: #0366d6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  .add-feed-controls button:hover {
+    background-color: #005cc5;
+  }
+  
+  .nav-filters {
+    list-style-type: none;
+    padding: 0;
+    margin: 0 0 24px 0;
+  }
+  
+  .nav-filters li {
+    padding: 10px 12px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #586069;
+  }
+  
+  .nav-filters li:hover {
+    background-color: #e1e4e8;
+    color: #24292e;
+  }
+  
+  .feeds-list {
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  
+  .main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 40px;
+    box-sizing: border-box;
+    background-color: #ffffff;
+    overflow-y: auto;
+  }
+  
+  .main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e1e4e8;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .main-header h1 {
+    margin: 0;
+    font-size: 24px;
+    color: #24292e;
+  }
+  
+  .main-header button {
+    padding: 8px 16px;
+    background-color: #fafbfc;
+    color: #24292e;
+    border: 1px solid #d1d5da;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  .main-header button:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .articles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Basic Card CSS for Articles */
+  .article-card {
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 20px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s ease;
+  }
+  
+  .article-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  }
+  
+  .article-card-title {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    color: #0366d6;
+    cursor: pointer;
+  }
+  
+  .article-card-summary {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #444d56;
+    line-height: 1.5;
+  }
+  
+  .article-card-meta {
+    margin: 0;
+    font-size: 12px;
+    color: #6a737d;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sidebar">
+    <h2 class="sidebar-header">RSS Reader</h2>
+    
+    <div class="add-feed-controls">
+      <input type="url" placeholder="https://example.com/rss">
+      <button type="button">Add</button>
+    </div>
+    
+    <ul class="nav-filters">
+      <li>All</li>
+      <li>Unread</li>
+      <li>Bookmarked</li>
+    </ul>
+    
+    <div class="feeds-list"></div>
+  </div>
+  
+  <div class="main-content">
+    <div class="main-header">
+      <h1>All</h1>
+      <button type="button">Refresh</button>
+    </div>
+    
+    <div class="articles-list"></div>
+  </div>
+</div>
+
+</body>
+</html><script>
+var rssFeeds = new Array();
+var rssState = new Object();
+
+(async function() {
+  var rawFeeds = await read('config/rss/feeds');
+  if(rawFeeds) rssFeeds = JSON.parse(rawFeeds);
+  
+  var rawState = await read('config/rss/state');
+  if(rawState) rssState = JSON.parse(rawState);
+})();
+
+window.saveFeeds = async function() {
+  await write(JSON.stringify(rssFeeds), 'config/rss/feeds');
+}
+
+window.saveState = async function() {
+  await write(JSON.stringify(rssState), 'config/rss/state');
+}
+</script><script>
+document.querySelector('.add-feed-controls button').addEventListener('click', function(event) {
+  event.preventDefault();
+  var input = document.querySelector('.add-feed-controls input[type="url"]');
+  var url = input.value;
+  if (url) {
+    rssFeeds.push(url);
+    if (typeof window.saveFeeds === 'function') {
+      window.saveFeeds();
+    }
+    input.value = '';
+    window.renderFeeds();
+  }
+});
+
+window.renderFeeds = function() {
+  var list = document.querySelector('.feeds-list');
+  if (!list) return;
+  list.innerHTML = '';
+  for (var i = 0; i < rssFeeds.length; i++) {
+    (function(index) {
+      var url = rssFeeds[index];
+      var div = document.createElement('div');
+      div.style.display = 'flex';
+      div.style.justifyContent = 'space-between';
+      div.style.alignItems = 'center';
+      div.style.marginBottom = '8px';
+      div.style.padding = '8px';
+      div.style.backgroundColor = '#ffffff';
+      div.style.border = '1px solid #e1e4e8';
+      div.style.borderRadius = '4px';
+
+      var span = document.createElement('span');
+      span.textContent = url;
+      span.style.fontSize = '12px';
+      span.style.wordBreak = 'break-all';
+      span.style.color = '#24292e';
+      span.style.marginRight = '8px';
+
+      var btn = document.createElement('button');
+      btn.textContent = 'Delete';
+      btn.style.fontSize = '12px';
+      btn.style.padding = '4px 8px';
+      btn.style.backgroundColor = '#fafbfc';
+      btn.style.color = '#d73a49';
+      btn.style.border = '1px solid #e1e4e8';
+      btn.style.borderRadius = '4px';
+      btn.style.cursor = 'pointer';
+
+      btn.addEventListener('click', function() {
+        rssFeeds.splice(index, 1);
+        if (typeof window.saveFeeds === 'function') {
+          window.saveFeeds();
+        }
+        window.renderFeeds();
+      });
+
+      div.appendChild(span);
+      div.appendChild(btn);
+      list.appendChild(div);
+    })(i);
+  }
+};
+
+window.fetchAll = async function() {
+  var articles = [];
+  try {
+    for (var i = 0; i < rssFeeds.length; i++) {
+      var url = rssFeeds[i];
+      var response = await fetch(window.FOG_URL + '/proxy?url=' + encodeURIComponent(url));
+      if (!response.ok) {
+        throw new Error('Fetch failed for: ' + url);
+      }
+      
+      var text = await response.text();
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(text, 'text/xml');
+      
+      var items = doc.querySelectorAll('item, entry');
+      for (var j = 0; j < items.length; j++) {
+        var item = items[j];
+        var titleNode = item.querySelector('title');
+        var linkNode = item.querySelector('link');
+        var pubDateNode = item.querySelector('pubDate, published, updated');
+        var descNode = item.querySelector('description, summary, content');
+        
+        var title = titleNode ? titleNode.textContent : '';
+        var link = '';
+        if (linkNode) {
+          link = linkNode.textContent || linkNode.getAttribute('href') || '';
+        }
+        var pubDate = pubDateNode ? pubDateNode.textContent : '';
+        var description = descNode ? descNode.textContent : '';
+        
+        articles.push({
+          title: title,
+          link: link,
+          pubDate: pubDate,
+          description: description
+        });
+      }
+    }
+    
+    articles.sort(function(a, b) {
+      var dateA = new Date(a.pubDate).getTime() || 0;
+      var dateB = new Date(b.pubDate).getTime() || 0;
+      return dateB - dateA;
+    });
+    
+    if (typeof write === 'function') {
+      await write(JSON.stringify(articles), 'config/rss/cache');
+    }
+    return articles;
+  } catch (error) {
+    try {
+      if (typeof read === 'function') {
+        var cached = await read('config/rss/cache');
+        if (cached) {
+          return JSON.parse(cached);
+        }
+      }
+    } catch (e) {}
+    return [];
+  }
+};
+</script><script>
+window.renderArticles = async function(filterName) {
+  var rawCache = await read('config/rss/cache');
+  var cached = JSON.parse(rawCache || '[]');
+  
+  var list = document.querySelector('.articles-list');
+  if (list) {
+    list.innerHTML = '';
+  }
+  
+  var header = document.querySelector('.main-header h1');
+  if (header) {
+    header.textContent = filterName;
+  }
+
+  for (var i = 0; i < cached.length; i++) {
+    var article = cached[i];
+    var link = article.link || article.title;
+    
+    if (!rssState[link]) {
+      rssState[link] = { read: false, bookmarked: false };
+    }
+    
+    var state = rssState[link];
+    
+    if (filterName === 'Unread' && state.read) {
+      continue;
+    }
+    
+    if (filterName === 'Bookmarked' && !state.bookmarked) {
+      continue;
+    }
+    
+    var card = document.createElement('div');
+    card.className = 'article-card';
+    
+    var title = document.createElement('h3');
+    title.className = 'article-card-title';
+    var titleLink = document.createElement('a');
+    titleLink.href = link;
+    titleLink.target = '_blank';
+    titleLink.textContent = article.title;
+    titleLink.style.textDecoration = 'none';
+    titleLink.style.color = 'inherit';
+    title.appendChild(titleLink);
+    
+    var meta = document.createElement('p');
+    meta.className = 'article-card-meta';
+    meta.textContent = article.pubDate || '';
+    
+    var summary = document.createElement('p');
+    summary.className = 'article-card-summary';
+    var tmp = document.createElement('div');
+    tmp.innerHTML = article.description || '';
+    var textContent = tmp.textContent || tmp.innerText || '';
+    summary.textContent = textContent.length > 250 ? textContent.substring(0, 250) + '...' : textContent;
+    
+    var controls = document.createElement('div');
+    controls.style.display = 'flex';
+    controls.style.gap = '8px';
+    controls.style.marginTop = '12px';
+    
+    var btnStyle = 'padding: 6px 12px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid #d1d5da; border-radius: 4px; background-color: #fafbfc; color: #24292e;';
+    
+    var btnRead = document.createElement('button');
+    btnRead.textContent = state.read ? 'Mark Unread' : 'Mark Read';
+    btnRead.style.cssText = btnStyle;
+    btnRead.onclick = (function(id, currentFilter) {
+      return async function() {
+        rssState[id].read = !rssState[id].read;
+        if (typeof window.saveState === 'function') {
+          await window.saveState();
+        }
+        window.renderArticles(currentFilter);
+      };
+    })(link, filterName);
+    
+    var btnBookmark = document.createElement('button');
+    btnBookmark.textContent = state.bookmarked ? 'Unbookmark' : 'Bookmark';
+    btnBookmark.style.cssText = btnStyle;
+    btnBookmark.onclick = (function(id, currentFilter) {
+      return async function() {
+        rssState[id].bookmarked = !rssState[id].bookmarked;
+        if (typeof window.saveState === 'function') {
+          await window.saveState();
+        }
+        window.renderArticles(currentFilter);
+      };
+    })(link, filterName);
+    
+    controls.appendChild(btnRead);
+    controls.appendChild(btnBookmark);
+    
+    card.appendChild(title);
+    card.appendChild(meta);
+    card.appendChild(summary);
+    card.appendChild(controls);
+    
+    list.appendChild(card);
+  }
+};
+
+var navFilters = document.querySelectorAll('.nav-filters li');
+for (var j = 0; j < navFilters.length; j++) {
+  navFilters[j].addEventListener('click', function(e) {
+    var filterName = e.target.textContent;
+    window.renderArticles(filterName);
+  });
+}
+
+var refreshBtn = document.querySelector('.main-header button');
+if (refreshBtn) {
+  refreshBtn.addEventListener('click', async function() {
+    var originalText = refreshBtn.textContent;
+    refreshBtn.textContent = 'Refreshing...';
+    try {
+      if (typeof window.fetchAll === 'function') {
+        await window.fetchAll();
+      }
+    } catch (err) {}
+    refreshBtn.textContent = originalText;
+    window.renderArticles('All');
+  });
+}
+
+setTimeout(function() {
+  if (typeof window.renderFeeds === 'function') {
+    window.renderFeeds();
+  }
+  window.renderArticles('All');
+}, 100);
+</script>

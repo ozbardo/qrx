@@ -1,52 +1,49 @@
 #chat?e&w&p=TASK: output HTML wireframe for a chatbot
-  - header (id="chat-header")
-    - model name input (id="chat-model")
-    - host input (id="chat-host")
-    - apikey input type=password (id="chat-key")
-  - messages area (id="chat-messages")
-  - footer (id="chat-footer")
-    - resizable textarea (id="chat-input")
-    - submit button (id="chat-submit")
-  - css: flex so messages fills space between header and footer
+  - components:
+    - header
+      - model details
+        - model name
+        - model host
+        - apikey (type=password)
+    - messages area (no placeholders)
+    - footer
+      - resizable textarea
+      - submit
+  - css: use flex so that the messages area fits the space between the header and footer
   - no javascript
-  - no html/head/body tags
-&w&a=1&p=TASK: output a SCRIPT tag that populates header from localStorage
-  - read localStorage.getItem('m') into input#chat-model value
-  - read localStorage.getItem('h') into input#chat-host value
-  - read localStorage.getItem('k') into input#chat-key value
-  - use var for all variables
-  - run immediately, no DOMContentLoaded wait
-&w&a=1&c=src&p=TASK: output a SCRIPT tag that handles chat with streaming
-  - see CONTEXT for how gen() makes API calls
-  - global var chatHistory = []
-  - function sendMessage():
-    - get value from textarea#chat-input
-    - append user message div to div#chat-messages
-    - push {role: "user", content: text} to chatHistory
-    - build prompt: JSON.stringify(chatHistory) + "\nuser: " + text
-    - read model from input#chat-model, host from input#chat-host, key from input#chat-key
-    - POST to host with stream: true
-    - read response as stream, parse each "data: {...}" line
-    - extract choices[0].delta.content and append to div#chat-messages incrementally
-    - push {role: "assistant", content: fullResponse} to chatHistory
-    - clear textarea#chat-input
-  - bind textarea#chat-input CTRL+ENTER and button#chat-submit to sendMessage()
-  - prevent default form submission (no page reload)
-  - use var for all variables
-  - run immediately, no DOMContentLoaded wait
-&w&a=1&c=src&p=TASK: output a SCRIPT tag that adds [[link]] context transformer plugin
-  - see CONTEXT for how read(k, d) works
-  - add plugin to chatPlugins named "linkParser"
-  - plugin.callback receives (prompt, chatHistory)
-  - find all [[link]] patterns in prompt using regex
-  - handle formats (use %23 as escaped hash in prompts):
-    - [[link]] === [[${DB}%23link]]
-    - [[%23link]] === [[${DB}%23link]]
-    - [[db%23link]] === [[db%23link]]
-  - for each match: replace %23 with actual hash symbol then call read(link, db).then(content => replace [[link]] with <context file="db%23link">content</context>)
-  - console.log each link and resolved content for debugging
-  - wrap in try/catch, silently ignore missing files
-  - return transformed prompt
-  - use var for all variables
-  - run immediately, no DOMContentLoaded wait
+  - dont include html/head/body tags just the wireframe
+&w&a=1&p=TASK: output a SCRIPT tag that populates the header details
+  - read the value of localStorage.getItem('m') and store it in the model name field
+  - do same for localStorage.getItem('h')
+  - and localStorage.getItem('k')
+  - do no
+&w&a=1&c=src&p=TASK: output a SCRIPT tag that handles the actual chat
+  - the attached CONTEXT gives you clues on how to handle chat
+    - there a special case for "google"
+  - reimplement but with streaming use streaming mode
+    - for "google" the endpoint would be :streamGenerateContent
+    - for any other host, set stream to true
+  - create a hook system so that we can add context transformers just before the prompt is sent to the ai
+    - just use a global chatPlugins = {pluginName: {callback: function (currentPrompt, fullChat) {returns transformedText}}}
+    - create a plugin that console.logs the text before it's sent
+  - send the full chat + the users prompt as a single string (no need to send array of messages)
+  - send when user presses either CTRL+ENTER inside the textarea OR when they press submit button
+  - textarea is cleared upon submit
+  - textarea is resizable
+  - do not autoscroll the page
+&w&a=1&p=TASK: output a SCRIPT tag to add a new context transformer plugin
+  - window.DB is a global that contains the database table name
+  - look for `[[link]]` in the current prompt
+    - [[links]] can be in form table#record assume the following
+      - [[link]] === [[${DB}%23link]]; name === ${DB}
+      - [[%23link]] === [[${DB}%23link]]; name === ${DB}
+      - [[some%23link]] === [[some%23link]]; name === some
+    - use `read(link, name).then(context=>{})` to replace the [[link]] with the context
+      - wrap the context with "<context file="some%23link">...data...</context>
+    - console.log the link and the context for debugging
+  - return the transformed context
+  - only extract [[links]] in the current PROMPT not the whole chat
+  - try...catch it, often the links wont exist yet; silently quiet those errors
+  - replace %23 with actual hash symbol
+  - be mindful of how you handle promises and [Object object] when submitting context
 &w
