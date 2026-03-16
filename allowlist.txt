@@ -1,5 +1,7 @@
 ### News Aggregators
 news.google.com
+reddit.com
+www.reddit.com
 
 ### Search Engines
 duckduckgo.com
