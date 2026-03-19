@@ -6,8 +6,8 @@
 - model host
 - apikey (type=password)
 - split-view container (use flex row)
-- left-panel (for agent internal monologue and tools)
-- right-panel (for the final chat with user)
+- left-panel (for agent internal monologue and tools; no placeholders)
+- right-panel (for the final chat with user; no placeholders)
 - footer
 - resizable textarea
 - submit button (must be type="button", DO NOT wrap anything in a <form> tag)
@@ -27,7 +27,7 @@
 - run: async function(input) { let d = null; let k = input; if (input.includes('%23')) { let p = input.split('%23'); d = p[0]; k = p[1]; } return await read(k, d || db) || "File not found"; }
 - add a tool named "list_files" to window.BaseTools
 - description: "Lists files. Input can be a namespace string, or empty for the current database."
-- run: async function(input) { return JSON.stringify(await keys(undefined, input || db)); }
+- run: async function(input) { let targetDb = input %3F await getDB(input) : db; return JSON.stringify(await keys(undefined, targetDb)); }
 &w&a=1&c=src&p=TASK: output a SCRIPT tag that handles the agent reasoning loop
 - the attached CONTEXT gives you clues on how to handle API calls
 - reimplement the api call to the LLM (like in gen) using the values from the header inputs
@@ -51,10 +51,10 @@
 - if parsing fails, push { role: "System", content: "Error: Invalid JSON output." } to window.chatHistory and continue loop.
 - if the parsed object has an "action" property:
 - INSIDE a try/catch block:
-- let toolResult = "";
-- if (window.BaseTools[parsed.action]) { toolResult = await window.BaseTools[parsed.action].run(parsed.action_input); } else { let code = await read(parsed.action); if (!code) throw new Error("Tool not found"); toolResult = await new Function('INPUT', 'return (async () => {' + code + '})()')(parsed.action_input); }
+- let toolResult = ""; let code = "";
+- if (window.BaseTools[parsed.action]) { toolResult = await window.BaseTools[parsed.action].run(parsed.action_input); } else { code = await read(parsed.action) || ""; if (!code) throw new Error("Tool not found"); toolResult = await new Function('INPUT', 'return (async () => {' + code + '})()')(parsed.action_input); }
 - if (toolResult === undefined) toolResult = "Tool executed successfully (no return value).";
-- INSIDE catch: toolResult = "Tool Execution Error: " + err.message
+- INSIDE catch: call console.error("Tool Execution Failed:", err, code); and then set toolResult = "Tool Execution Error: " + err.message + "\nStack: " + err.stack + "\nCode evaluated:\n" + code;
 - AFTER try/catch: append "OBSERVATION: " + toolResult to the left-panel DOM
 - AFTER try/catch: push { role: "System", content: "OBSERVATION: " + toolResult } to window.chatHistory
 - continue the loop
@@ -62,5 +62,6 @@
 - append parsed.answer to the right-panel DOM
 - push { role: "Agent", content: parsed.answer } to window.chatHistory
 - break the loop
+- AFTER the loop finishes: if the loop hit the maximum 7 iterations without breaking early on an answer, append "System Diagnostics: Agent exhausted 7 reasoning steps. Aborted. Check left-panel for looping traces." to the right-panel DOM and update chatHistory.
 - do not autoscroll the page
 &w

@@ -11,7 +11,7 @@ HR=history.replaceState.bind(history)
 // default indexedDB name
 filename = MAIN = 'main'
 DB = LP.slice(1) || MAIN
-S = 'createObjectStore'
+COS = 'createObjectStore'
 !L.hash && HR(0, '', `#${MAIN}`)
 
 // default table name
@@ -33,7 +33,7 @@ queryDB = (q, f) =>
 getDB = (n = DB, t = FILES) => {
   let q = indexedDB.open(n)
   // create history store too (no keyPath, we supply key on put)
-  q.onupgradeneeded = e => {let r=e[T].result;r[S](t);r[S]($H)}
+  q.onupgradeneeded = e => {let r=e[T].result;r[COS](t);r[COS]($H)}
   return queryDB(q, e => e[T].result)
 }
 

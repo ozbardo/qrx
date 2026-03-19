@@ -1,111 +1,125 @@
 <style>
-  .wireframe-container {
+  .app-wrapper {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    width: 100%;
+    box-sizing: border-box;
     font-family: sans-serif;
   }
-  .header {
-    flex: 0 0 auto;
-    padding: 10px;
-    border-bottom: 1px solid #ccc;
+  header {
     display: flex;
-    gap: 20px;
-    align-items: center;
-    background: #f4f4f4;
+    padding: 15px;
+    border-bottom: 1px solid #ccc;
+    background-color: #f9f9f9;
   }
   .model-details {
     display: flex;
-    gap: 10px;
+    gap: 15px;
     align-items: center;
+    flex-wrap: wrap;
   }
-  .split-view {
-    display: flex;
-    flex-direction: row;
-    flex: 1 1 auto;
-    overflow: hidden;
-  }
-  .left-panel {
-    width: 50%;
-    overflow-y: auto;
-    border-right: 1px solid #ccc;
-    padding: 15px;
-    background: #fafafa;
-  }
-  .right-panel {
-    width: 50%;
-    overflow-y: auto;
-    padding: 15px;
-  }
-  .footer {
-    flex: 0 0 auto;
-    padding: 10px;
-    border-top: 1px solid #ccc;
-    background: #f4f4f4;
-  }
-  .footer-controls {
+  .model-details label {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    font-size: 12px;
+    color: #333;
+  }
+  .model-details input {
+    margin-top: 4px;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  .split-view-container {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    overflow: hidden;
+  }
+  .left-panel, .right-panel {
+    width: 50%;
+    overflow-y: auto;
+    box-sizing: border-box;
+  }
+  .left-panel {
+    border-right: 1px solid #ccc;
+    background-color: #fafafa;
+  }
+  .right-panel {
+    background-color: #ffffff;
+  }
+  footer {
+    display: flex;
+    padding: 15px;
+    gap: 10px;
+    border-top: 1px solid #ccc;
+    background-color: #f9f9f9;
+    align-items: flex-end;
   }
   textarea {
-    width: 100%;
-    min-height: 60px;
-    resize: both;
+    flex: 1;
+    resize: vertical;
+    min-height: 50px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
   }
   button {
-    align-self: flex-end;
-    padding: 8px 16px;
+    padding: 10px 20px;
+    height: 50px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  button:hover {
+    background-color: #0056b3;
   }
 </style>
 
-<div class="wireframe-container">
-  <div class="header">
+<div class="app-wrapper">
+  <header>
     <div class="model-details">
-      <label>Model Name: <input type="text" value="Agent-v1"></label>
-      <label>Model Host: <input type="text" value="https://api.provider.ai"></label>
-      <label>API Key: <input type="password" value="********"></label>
+      <label>
+        Model Name
+        <input type="text" />
+      </label>
+      <label>
+        Model Host
+        <input type="text" />
+      </label>
+      <label>
+        API Key
+        <input type="password" />
+      </label>
     </div>
+  </header>
+  
+  <div class="split-view-container">
+    <div class="left-panel"></div>
+    <div class="right-panel"></div>
   </div>
-
-  <div class="split-view">
-    <div class="left-panel">
-      <h3>Internal Monologue and Tools</h3>
-      <div style="color: #666; font-family: monospace;">
-        [System] Initializing agent...<br>
-        [Thinking] Analyzing user intent...<br>
-        [Tool] Calling search_web(query="latest news")...
-      </div>
-    </div>
-    <div class="right-panel">
-      <h3>Final Chat</h3>
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        <div style="background: #eef; padding: 8px; border-radius: 4px;">User: Hello, status update?</div>
-        <div style="background: #efe; padding: 8px; border-radius: 4px;">Agent: I have processed your request and everything is running smoothly.</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">
-    <div class="footer-controls">
-      <textarea placeholder="Type your message to the agent..."></textarea>
-      <button type="button">Submit</button>
-    </div>
-  </div>
+  
+  <footer>
+    <textarea></textarea>
+    <button type="button">Submit</button>
+  </footer>
 </div><script>
-  (function() {
-    const inputs = document.querySelectorAll('.model-details input');
-    const m = localStorage.getItem('m');
-    const h = localStorage.getItem('h');
-    const k = localStorage.getItem('k');
-    if (m !== null) inputs[0].value = m;
-    if (h !== null) inputs[1].value = h;
-    if (k !== null) inputs[2].value = k;
-  })();
+  const inputs = document.querySelectorAll('.model-details input');
+  const m = localStorage.getItem('m');
+  const h = localStorage.getItem('h');
+  const k = localStorage.getItem('k');
+  
+  if (m !== null && inputs[0]) inputs[0].value = m;
+  if (h !== null && inputs[1]) inputs[1].value = h;
+  if (k !== null && inputs[2]) inputs[2].value = k;
 </script><script>
 window.BaseTools = {};
-window.BaseTools.read_file = {
+
+window.BaseTools["read_file"] = {
   description: "Reads a file. Input MUST be namespace#filename or just filename",
   run: async function(input) {
     let d = null;
@@ -118,115 +132,185 @@ window.BaseTools.read_file = {
     return await read(k, d || db) || "File not found";
   }
 };
-window.BaseTools.list_files = {
+
+window.BaseTools["list_files"] = {
   description: "Lists files. Input can be a namespace string, or empty for the current database.",
   run: async function(input) {
-    return JSON.stringify(await keys(undefined, input || db));
+    let targetDb = input ? await getDB(input) : db;
+    return JSON.stringify(await keys(undefined, targetDb));
   }
 };
 </script><script>
-(function() {
-  window.chatHistory = [];
-  const leftPanel = document.querySelector('.left-panel');
-  const rightPanel = document.querySelector('.right-panel');
-  const textarea = document.querySelector('.footer textarea');
-  const button = document.querySelector('.footer button');
+window.chatHistory = [];
 
-  const callLLM = async (prompt) => {
+async function runAgent(userMessage) {
+  const rightPanel = document.querySelector('.right-panel');
+  const leftPanel = document.querySelector('.left-panel');
+  
+  const userDiv = document.createElement('div');
+  userDiv.style.padding = '10px';
+  userDiv.style.borderBottom = '1px solid #ccc';
+  userDiv.style.backgroundColor = '#f1f8ff';
+  userDiv.innerHTML = `<strong>User:</strong> <span style="white-space: pre-wrap;">${userMessage}</span>`;
+  rightPanel.appendChild(userDiv);
+  
+  window.chatHistory.push({ role: "User", content: userMessage });
+  
+  let loopCount = 0;
+  let resolved = false;
+  
+  while (loopCount < 7) {
+    loopCount++;
+    
+    let activeTools = Object.entries(window.BaseTools).map(x => x[0] + ' - ' + x[1].description);
+    let matchedKeys = await keys(IDBKeyRange.bound('tool', 'tool\uffff'));
+    
+    for (const k of matchedKeys) {
+      let c = await read(k);
+      let desc = "";
+      if (c && c.includes("/*")) {
+        desc = c.split("*/")[0].split("/*")[1].trim();
+      }
+      activeTools.push(k + ' - ' + desc);
+    }
+    
+    let systemPrompt = "You are an autonomous AI. Output ONLY valid JSON. If the user asks about other namespaces or databases, proactively use tools to investigate. To use a tool, output exactly: {\"thought\": \"reasoning\", \"action\": \"tool_name\", \"action_input\": \"input\"}. For the final answer, output exactly: {\"thought\": \"reasoning\", \"answer\": \"final message\"}. DO NOT wrap your response in markdown blocks.";
+    systemPrompt += "\nAVAILABLE TOOLS:\n" + activeTools.join('\n');
+    let fullPrompt = systemPrompt + "\n\nCHAT HISTORY:\n" + JSON.stringify(window.chatHistory);
+    
     const inputs = document.querySelectorAll('.model-details input');
     const m = inputs[0].value;
     const h = inputs[1].value;
-    const k = inputs[2].value;
-    const isGoogle = h.toLowerCase().includes("google") || h.toLowerCase().includes("generativelanguage");
-    const url = isGoogle ? `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${k}` : h;
-    const body = isGoogle ? { contents: [{ parts: [{ text: prompt }] }] } : { model: m, messages: [{ role: "user", content: prompt }], stream: false };
-    const headers = { "Content-Type": "application/json" };
-    if (!isGoogle && k) headers.Authorization = `Bearer ${k}`;
-
-    const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
-    const data = await res.json();
-    return isGoogle ? data.candidates?.[0]?.content?.parts?.[0]?.text : (data.choices?.[0]?.message?.content || data.message?.content);
-  };
-
-  window.runAgent = async (userMessage) => {
-    if (!userMessage) return;
+    const k_api = inputs[2].value;
     
-    const uMsg = document.createElement('div');
-    uMsg.style = "background: #eef; padding: 8px; border-radius: 4px; margin-bottom: 10px;";
-    uMsg.textContent = "User: " + userMessage;
-    rightPanel.appendChild(uMsg);
-    window.chatHistory.push({ role: "User", content: userMessage });
-
-    for (let i = 0; i < 7; i++) {
-      let activeTools = Object.entries(window.BaseTools).map(x => x[0] + ' - ' + x[1].description);
-      let matchedKeys = await keys(IDBKeyRange.bound('tool', 'tool\uffff'));
-      for (let k of matchedKeys) {
-        let c = await read(k);
-        let desc = "";
-        if (c && c.includes("/*")) { desc = c.split("*/")[0].split("/*")[1].trim(); }
-        activeTools.push(k + ' - ' + desc);
-      }
-
-      let systemPrompt = "You are an autonomous AI. Output ONLY valid JSON. If the user asks about other namespaces or databases, proactively use tools to investigate. To use a tool, output exactly: {\"thought\": \"reasoning\", \"action\": \"tool_name\", \"action_input\": \"input\"}. For the final answer, output exactly: {\"thought\": \"reasoning\", \"answer\": \"final message\"}. DO NOT wrap your response in markdown blocks.";
-      systemPrompt += "\nAVAILABLE TOOLS:\n" + activeTools.join('\n');
-
-      const aiResponse = await callLLM(systemPrompt + "\n\nCHAT HISTORY:\n" + JSON.stringify(window.chatHistory)) || "";
-      const lLog = document.createElement('div');
-      lLog.style = "font-family: monospace; white-space: pre-wrap; border-bottom: 1px solid #ddd; margin-bottom: 10px; padding-bottom: 5px;";
-      lLog.textContent = aiResponse;
-      leftPanel.appendChild(lLog);
-
-      let parsed;
-      try {
-        const start = aiResponse.indexOf('{');
-        const end = aiResponse.lastIndexOf('}');
-        if (start === -1 || end === -1) throw new Error("No JSON");
-        parsed = JSON.parse(aiResponse.slice(start, end + 1));
-      } catch (e) {
-        window.chatHistory.push({ role: "System", content: "Error: Invalid JSON output." });
-        continue;
-      }
-
-      if (parsed.action) {
-        let toolResult = "";
-        try {
-          if (window.BaseTools[parsed.action]) {
-            toolResult = await window.BaseTools[parsed.action].run(parsed.action_input);
-          } else {
-            let code = await read(parsed.action);
-            if (!code) throw new Error("Tool not found");
-            toolResult = await new Function('INPUT', 'return (async () => {' + code + '})()')(parsed.action_input);
-          }
-          if (toolResult === undefined) toolResult = "Tool executed successfully (no return value).";
-        } catch (err) {
-          toolResult = "Tool Execution Error: " + err.message;
-        }
-        const oLog = document.createElement('div');
-        oLog.style = "color: blue; font-weight: bold; margin-bottom: 10px;";
-        oLog.textContent = "OBSERVATION: " + toolResult;
-        leftPanel.appendChild(oLog);
-        window.chatHistory.push({ role: "System", content: "OBSERVATION: " + toolResult });
-      } else if (parsed.answer) {
-        const aMsg = document.createElement('div');
-        aMsg.style = "background: #efe; padding: 8px; border-radius: 4px; margin-bottom: 10px;";
-        aMsg.textContent = "Agent: " + parsed.answer;
-        rightPanel.appendChild(aMsg);
-        window.chatHistory.push({ role: "Agent", content: parsed.answer });
-        break;
-      }
+    const u = {
+      model: m,
+      messages: [{ role: "user", content: fullPrompt }],
+      stream: false
+    };
+    
+    const d = { "Content-Type": "application/json" };
+    if (k_api) {
+      d.Authorization = `Bearer ${k_api}`;
     }
-  };
+    
+    let aiResponse = "";
+    try {
+      let a = await fetch(h, {
+        method: "POST",
+        headers: d,
+        body: JSON.stringify(u)
+      });
+      let r = await a.json();
+      aiResponse = r.message?.content || r.choices?.[0]?.message?.content || JSON.stringify(r);
+    } catch (e) {
+      aiResponse = e.message;
+    }
+    
+    const aiDiv = document.createElement('div');
+    aiDiv.style.padding = '8px';
+    aiDiv.style.borderBottom = '1px solid #ddd';
+    aiDiv.style.fontSize = '12px';
+    aiDiv.style.fontFamily = 'monospace';
+    aiDiv.style.whiteSpace = 'pre-wrap';
+    aiDiv.textContent = `Iteration ${loopCount}\n${aiResponse}`;
+    leftPanel.appendChild(aiDiv);
+    
+    let parsed;
+    try {
+      let startIdx = aiResponse.indexOf('{');
+      let endIdx = aiResponse.lastIndexOf('}');
+      if (startIdx === -1 || endIdx === -1) {
+        throw new Error("Missing JSON brackets");
+      }
+      let jsonString = aiResponse.slice(startIdx, endIdx + 1);
+      parsed = JSON.parse(jsonString);
+    } catch (e) {
+      window.chatHistory.push({ role: "System", content: "Error: Invalid JSON output." });
+      continue;
+    }
+    
+    if (parsed.action) {
+      let toolResult = "";
+      let code = "";
+      try {
+        if (window.BaseTools[parsed.action]) {
+          toolResult = await window.BaseTools[parsed.action].run(parsed.action_input);
+        } else {
+          code = await read(parsed.action) || "";
+          if (!code) throw new Error("Tool not found");
+          toolResult = await new Function('INPUT', 'return (async () => {' + code + '})()')(parsed.action_input);
+        }
+        if (toolResult === undefined) {
+          toolResult = "Tool executed successfully (no return value).";
+        }
+      } catch (err) {
+        console.error("Tool Execution Failed:", err, code);
+        toolResult = "Tool Execution Error: " + err.message + "\nStack: " + err.stack + "\nCode evaluated:\n" + code;
+      }
+      
+      const obsDiv = document.createElement('div');
+      obsDiv.style.padding = '8px';
+      obsDiv.style.borderBottom = '1px solid #ddd';
+      obsDiv.style.fontSize = '12px';
+      obsDiv.style.fontFamily = 'monospace';
+      obsDiv.style.backgroundColor = '#fffbe6';
+      obsDiv.style.whiteSpace = 'pre-wrap';
+      obsDiv.textContent = "OBSERVATION: " + toolResult;
+      leftPanel.appendChild(obsDiv);
+      
+      window.chatHistory.push({ role: "System", content: "OBSERVATION: " + toolResult });
+      continue;
+    }
+    
+    if (parsed.answer) {
+      const agentDiv = document.createElement('div');
+      agentDiv.style.padding = '10px';
+      agentDiv.style.borderBottom = '1px solid #ccc';
+      agentDiv.style.backgroundColor = '#e6fffa';
+      agentDiv.innerHTML = `<strong>Agent:</strong> <span style="white-space: pre-wrap;">${parsed.answer}</span>`;
+      rightPanel.appendChild(agentDiv);
+      
+      window.chatHistory.push({ role: "Agent", content: parsed.answer });
+      resolved = true;
+      break;
+    }
+  }
+  
+  if (!resolved && loopCount >= 7) {
+    const diagStr = "System Diagnostics: Agent exhausted 7 reasoning steps. Aborted. Check left-panel for looping traces.";
+    const diagDiv = document.createElement('div');
+    diagDiv.style.padding = '10px';
+    diagDiv.style.borderBottom = '1px solid #ccc';
+    diagDiv.style.backgroundColor = '#ffe6e6';
+    diagDiv.style.color = 'red';
+    diagDiv.textContent = diagStr;
+    rightPanel.appendChild(diagDiv);
+    
+    window.chatHistory.push({ role: "System", content: diagStr });
+  }
+}
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const val = textarea.value;
+const textarea = document.querySelector('footer textarea');
+const button = document.querySelector('footer button');
+
+button.addEventListener('click', (e) => {
+  e.preventDefault();
+  const val = textarea.value.trim();
+  if (val) {
     textarea.value = '';
-    window.runAgent(val);
-  };
+    runAgent(val);
+  }
+});
 
-  button.addEventListener('click', handleSubmit);
-  textarea.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'Enter') handleSubmit(e);
-  });
-})();
+textarea.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    const val = textarea.value.trim();
+    if (val) {
+      textarea.value = '';
+      runAgent(val);
+    }
+  }
+});
 </script>
