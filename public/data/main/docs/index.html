@@ -1,32 +1,40 @@
-<!DOCTYPE html>
-<html>
-<head></head>
-<body><main id=A></main>
+<main id=A></main>
 <script id=S>
 // shorthands
 L = location
+LP = L.pathname
 $L = localStorage
+T = 'target'
+TL = 'toLowerCase'
+HR=history.replaceState.bind(history)
 
 // default indexedDB name
 filename = MAIN = 'main'
-DB = L.pathname.slice(1) || MAIN
-!L.hash && history.replaceState(0, '', `#${MAIN}`)
+DB = LP.slice(1) || MAIN
+S = 'createObjectStore'
+!L.hash && HR(0, '', `#${MAIN}`)
+
 // default table name
 FILES = 'files'
+
+// history logging (pathname+hash+query only)
+$H='history'
+log=()=>getDB().then(d=>{let t=+new Date;return queryDB(tx('readwrite',d,$H).put({t,u:LP+L.search+L.hash},t))})
 os = null
 
 // promise wrapper around DB transactions
 // q: the request
 // f: optionall callback to transform result
 queryDB = (q, f) =>
-  new Promise(r => q['onsuccess'] = e => r(f ? f(e) : e.target.result))
+  new Promise(r => q['onsuccess'] = e => r(f ? f(e) : e[T].result))
 
 // n: database name
 // t: table name
-getDB = (n = DB, t = FILES) => { 
+getDB = (n = DB, t = FILES) => {
   let q = indexedDB.open(n)
-  q.onupgradeneeded = e => e.target.result.createObjectStore(t)
-  return queryDB(q, e => e.target.result)
+  // create history store too (no keyPath, we supply key on put)
+  q.onupgradeneeded = e => {let r=e[T].result;r[S](t);r[S]($H)}
+  return queryDB(q, e => e[T].result)
 }
 
 // returns all keys in database
@@ -37,11 +45,8 @@ keys = (q, d) => queryDB(tx('readonly', d).getAllKeys(q))
 // db transaction
 // m: transaction mode
 // d: database
-tx = (m = 'readonly', d = db) => d.transaction(FILES, m).objectStore(FILES)
-
-write = (v, k, d = db, n = filename) => queryDB(tx('readwrite', d).put(v, k || n)) 
-
-// read 
+tx = (m = 'readonly', d = db, t = FILES) => d.transaction(t, m).objectStore(t)
+write=(v,k,d=db,n=filename)=>queryDB(tx('readwrite',d).put(v,k||n))
 read = async (k, d = db) => {
   d = d.trim ? await getDB(d) : d
   let v = await queryDB(tx('readonly', d).get(k || filename))
@@ -51,12 +56,10 @@ read = async (k, d = db) => {
 // run boot/* files
 boot = async () => {
   db = await getDB()
-  os = DB.toLowerCase() == MAIN.toLowerCase() ? null : await getDB(MAIN)
-
+  os = DB[TL]() == MAIN[TL]() ? null : await getDB(MAIN)
   let q = IDBKeyRange.bound('boot', 'boot\uffff'),
-      b = await keys(q)
+    b = await keys(q)
   if (os) b = [...new Set([...b, ...await keys(q, os)])]
-
   for (let f of b) {
     try { (new Function('globals', await read(f)))(this) }
     catch (e) { console.error(f, e) }
@@ -68,22 +71,23 @@ boot = async () => {
 run = async () => {
   if (!db) db = await getDB()
   if (!L.hash) {
-    history.replaceState(0, '', `#${MAIN}`)
+    HR(0, '', `#${MAIN}`)
     return run()
   }
-
   let c, ctx, h = L.hash.slice(1),
-      [n, q] = h.split('?'),
-      f = filename = n,
-      p = new URLSearchParams(q),
-      v = await read(n) || '',
-      app = false // append mode
+    [n, q] = h.split('?'),
+    f = filename = n,
+    p = new URLSearchParams(q),
+    v = await read(n) || '',
+    app = false // append mode
+
+  // record history
+  q&&log()
 
   // The Machine Tape
   for (let [k, val] of p) {
     val = decodeURIComponent(val)
     let r, s
-
     // should we overwrite (0) or append (1)
     if (k == 'a') app = val != '0'
     // file pointer
@@ -91,7 +95,8 @@ run = async () => {
     // additional context buffer for ai only (does not get added to accumalator)
     else if (k == 'c') {
       if (val == '0') ctx = ''
-      else ctx = `<CONTEXT>${(ctx || '')}</CONTEXT>\n${((val == 'src' ? S.innerText : await read(val)) || '')}`
+      else ctx = `<CONTEXT>${(ctx || '')}</CONTEXT>
+${((val == 'src' ? S.innerText : await read(val)) || '')}`
     }
     // ai variables
     else if ('kmsh'.includes(k)) $L.setItem(k, val)
@@ -121,8 +126,7 @@ run = async () => {
       } catch (e) { v = app ? v + c : c }
     }
   }
-
-  if (q) history.replaceState(0, '', '#' + n)
+  if (q) HR(0, '', '#' + n)
   hydrate(v)
 }
 
@@ -143,26 +147,20 @@ hydrate = h => {
 // p: the prompt to use
 gen = async (ctx, p) => {
   let [k, m, s, h] = ['k', 'm', 's', 'h'].map(x => $L.getItem(x)),
-    g = h == 'google',
-    msg = ctx + p + (s || '\nONLY THESE TASKS, NO INNOVATING, NO TALKING, NO MARKDOWN, DO NOT ACKNOWLEDGE, BEGIN RAW OUTPUT NOW:'),
-    u = g ? `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${k}` : h,
-    b = g ? { contents: [{ parts: [{ text: msg }] }] }
-          : { model: m, messages: [{ role: 'user', content: msg }], stream: false},
-    head = { 'Content-Type': 'application/json'},
+    msg = ctx + p + (s || '\nNO TALKING, NO MARKDOWN, DO NOT ACKNOWLEDGE, BEGIN RAW OUTPUT NOW:'),
+    u = h,
+    b = { model: m, messages: [{ role: 'user', content: msg }], stream: false, },
+    head = { 'Content-Type': 'application/json' },
     req, res, txt
-
-  if (!g && k) head['Authorization'] = `Bearer ${k}`
+  if (k) head['Authorization'] = `Bearer ${k}`
   A.innerHTML = 'Thinking...'
   try {
     req = await fetch(u, { method: 'POST', headers: head, body: JSON.stringify(b) })
     res = await req.json()
-    txt = g ? res.candidates?.[0]?.content?.parts?.[0]?.text
-            : res.message?.content
+    txt = res.message?.content || res.choices?.[0]?.message?.content
   } catch (e) { txt = e.message }
-  
   return txt || ''
 }
-
 onhashchange = () => run()
 boot()
-</script></body></html>
+</script>

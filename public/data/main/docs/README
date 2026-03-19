@@ -1,15 +1,24 @@
-# Codex Hypertext
-
-## Kernel 26.02.15 (index.html)
-
-![][image1]  
-![][image2]
+<div align=center>
+  <div><img alt="Q for QRx" src="./public/favicon.png" width=96></div>
+  <h1>Generative QR Coding (QRx)</h1>
+  <p>QRx Kernel 26.02.15 (index.html)</p>
+  <div><img alt="QR Code for QRx Kernel 26.02.15" src="./public/index.qr.png" width=400></div>
+</div>
+<br>
 
 This qr encodes an html file turning any browser capable device since the 90s into an offline-first **ruliadic prism** that can help you do literally anything possible. It does this by reimagining the browser's local storage as a **regenerative file system** composed from **hyperlinks** that functions as a prompt chaining interface
 
-If you open that qr in the browser and scan or click the rest of the **hyperlinks** in this document that back to it you, will end up with something like [**https://hypertext.wiki**](https://hypertext.wiki) 
+If you open that qr in the browser and scan or click the rest of the **hyperlinks** in this document that back to it you, will end up with something like [**https://qrx.world**](https://qrx.world) 
 
-========================================
+
+
+
+
+-----------------------------
+
+
+
+
 
 # Core flags
 The above Kernel exposes the following URL `?query` params
@@ -50,6 +59,10 @@ The kernel exposes the following variables and methods
 | **`keys([q], [d])`** | **List Files**. Returns an array of all keys (filenames) in the database. `q` is an optional `IDBKeyRange`. |
 | **`getDB([n])`** | **Database Access**. Returns the IndexedDB instance for name `n`. Defaults to the current active database. |
 | **`run()`** | **Re-Run Tape**. Manually triggers the URL parsing loop. Useful if hash state changes programmatically without a reload. |
+
+
+========================================
+
 
 # Local Sync Server
 You can optionally sync your in-browser IndexedDB to flat files on your hard drive.
