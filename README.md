@@ -59,3 +59,14 @@ The kernel exposes the following variables and methods
 | **`keys([q], [d])`** | **List Files**. Returns an array of all keys (filenames) in the database. `q` is an optional `IDBKeyRange`. |
 | **`getDB([n])`** | **Database Access**. Returns the IndexedDB instance for name `n`. Defaults to the current active database. |
 | **`run()`** | **Re-Run Tape**. Manually triggers the URL parsing loop. Useful if hash state changes programmatically without a reload. |
+
+
+========================================
+
+
+# Local Sync Server
+You can optionally sync your in-browser IndexedDB to flat files on your hard drive.
+1. Create a `.env` file in the project root containing: `QRX_SECRET_KEY=dev_mode_secret`
+2. Run `npm start` to boot the local Node server.
+3. Install the sync interceptor (`/public/links/prompts/boot/sync`).
+4. Navigate to `#config` in QRx and set `qrx_fog_url` (e.g. `http://localhost:3000`) and `qrx_sync_key`.
