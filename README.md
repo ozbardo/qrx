@@ -69,4 +69,4 @@ You can optionally sync your in-browser IndexedDB to flat files on your hard dri
 1. Create a `.env` file in the project root containing: `QRX_SECRET_KEY=dev_mode_secret`
 2. Run `npm start` to boot the local Node server.
 3. Install the sync interceptor (`/public/links/prompts/boot/sync`).
-4. Navigate to `#config` in QRx and set `qrx_fog_url` (e.g. `http://localhost:3000`) and `qrx_sync_key`.
+4. Navigate to `#config` in QRx and set `FOG_URL` (e.g. `http://localhost:3000`) and `SYNC_KEY`.

@@ -1,6 +1,6 @@
 {
   "name": "qrx",
-  "version": "26.2.14",
+  "version": "26.3.20",
   "type": "module",
   "description": "generative concatenative vibe coding with qr codes",
   "main": "index.js",

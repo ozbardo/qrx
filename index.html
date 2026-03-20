@@ -46,7 +46,7 @@ keys = (q, d) => queryDB(tx('readonly', d).getAllKeys(q))
 // m: transaction mode
 // d: database
 tx = (m = 'readonly', d = db, t = FILES) => d.transaction(t, m).objectStore(t)
-write=(v,k,d=db,n=filename)=>queryDB(tx('readwrite',d).put(v,k||n))
+write=async(v,k,d=db,n=filename)=>(d=d.trim?await getDB(d):d,queryDB(tx('readwrite',d).put(v,k||n)))
 read = async (k, d = db) => {
   d = d.trim ? await getDB(d) : d
   let v = await queryDB(tx('readonly', d).get(k || filename))
