@@ -1,0 +1,5 @@
+?f=archive/devlog/money&a=1&p=extract all the money logs one per line in following format: YYMMDD HHMM $AMOUNT TIME SOURCE (any additional notes)&w&x=window.open('#archive/devlog/money')
+&f=archive/devlog/health&a=1&p=extract all sleep and weight logs one per line in format: YYMMDD HHMM [CATEGORY] Note&w&x=window.open('#archive/devlog/health')
+&f=archive/devlog/bookmarks&a=1&p=extract all explicit bookmarks, URLs, and opportunities one per line in format:
+[ ] [Title](URL)
+&w&x=window.open('#archive/devlog/bookmarks')
