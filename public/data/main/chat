@@ -1,25 +1,24 @@
 <style>
-  .chat-container {
+  .chat-layout {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    font-family: sans-serif;
     box-sizing: border-box;
+    font-family: Arial, sans-serif;
   }
   .chat-header {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 15px;
     padding: 15px;
-    background-color: #f4f4f5;
-    border-bottom: 1px solid #e4e4e7;
-    align-items: center;
+    background-color: #e9ecef;
+    border-bottom: 1px solid #ced4da;
   }
-  .header-item {
+  .model-details {
     display: flex;
-    flex-direction: column;
-    gap: 5px;
-    font-size: 14px;
+    align-items: center;
+    gap: 10px;
   }
   .chat-messages {
     flex: 1;
@@ -29,49 +28,41 @@
   }
   .chat-footer {
     display: flex;
+    align-items: flex-start;
     gap: 10px;
     padding: 15px;
-    background-color: #f4f4f5;
-    border-top: 1px solid #e4e4e7;
-    align-items: flex-end;
+    background-color: #e9ecef;
+    border-top: 1px solid #ced4da;
   }
-  .chat-textarea {
+  .chat-footer textarea {
     flex: 1;
     resize: vertical;
-    min-height: 44px;
+    min-height: 40px;
     padding: 10px;
-    border: 1px solid #e4e4e7;
+    border: 1px solid #ced4da;
     border-radius: 4px;
-    font-family: inherit;
   }
-  .chat-submit {
-    padding: 0 20px;
-    height: 44px;
-    background-color: #09090b;
-    color: #ffffff;
+  .chat-footer button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-weight: bold;
+    height: 100%;
   }
 </style>
 
-<div class="chat-container">
+<div class="chat-layout">
   <header class="chat-header">
-    <div class="header-item">
-      <label for="model-details">Model Details</label>
-      <input type="text" id="model-details" name="model-details">
-    </div>
-    <div class="header-item">
-      <label for="model-name">Model Name</label>
+    <div class="model-details">
+      <label for="model-name">Model Name:</label>
       <input type="text" id="model-name" name="model-name">
-    </div>
-    <div class="header-item">
-      <label for="model-host">Model Host</label>
+      
+      <label for="model-host">Model Host:</label>
       <input type="text" id="model-host" name="model-host">
-    </div>
-    <div class="header-item">
-      <label for="api-key">API Key</label>
+      
+      <label for="api-key">API Key:</label>
       <input type="password" id="api-key" name="api-key">
     </div>
   </header>
@@ -79,206 +70,205 @@
   <main class="chat-messages"></main>
 
   <footer class="chat-footer">
-    <textarea class="chat-textarea"></textarea>
-    <button type="submit" class="chat-submit">Submit</button>
+    <textarea id="user-input" name="user-input"></textarea>
+    <button type="submit">Submit</button>
   </footer>
 </div><script>
-  document.getElementById('model-name').value = localStorage.getItem('m') || '';
-  document.getElementById('model-host').value = localStorage.getItem('h') || '';
-  document.getElementById('api-key').value = localStorage.getItem('k') || '';
+  const modelName = localStorage.getItem('m');
+  const modelHost = localStorage.getItem('h');
+  const apiKey = localStorage.getItem('k');
+
+  if (modelName !== null) document.getElementById('model-name').value = modelName;
+  if (modelHost !== null) document.getElementById('model-host').value = modelHost;
+  if (apiKey !== null) document.getElementById('api-key').value = apiKey;
 </script><script>
-window.chatPlugins = {
-  logger: {
-    callback: function (currentPrompt, fullChat) {
-      const transformedText = fullChat + (fullChat ? "\n" : "") + "User: " + currentPrompt;
-      console.log("Transformed Context Sent to AI:\n", transformedText);
-      return transformedText;
-    }
-  }
-};
-
-let chatHistoryString = "";
-
-async function submitChat() {
-  const hostInput = document.getElementById('model-host').value.trim();
-  const nameInput = document.getElementById('model-name').value.trim();
-  const keyInput = document.getElementById('api-key').value.trim();
-  const textarea = document.querySelector('.chat-textarea');
-  const messagesContainer = document.querySelector('.chat-messages');
-
-  const userText = textarea.value.trim();
-  if (!userText) return;
-
-  textarea.value = '';
-
-  let transformedPrompt = chatHistoryString;
-  for (const pluginName in window.chatPlugins) {
-    if (typeof window.chatPlugins[pluginName]?.callback === 'function') {
-      transformedPrompt = window.chatPlugins[pluginName].callback(userText, transformedPrompt);
-    }
-  }
-
-  chatHistoryString = transformedPrompt;
-
-  const userDiv = document.createElement('div');
-  userDiv.style.padding = '10px';
-  userDiv.style.marginBottom = '10px';
-  userDiv.style.backgroundColor = '#f4f4f5';
-  userDiv.style.borderRadius = '6px';
-  userDiv.style.whiteSpace = 'pre-wrap';
-  userDiv.textContent = userText;
-  messagesContainer.appendChild(userDiv);
-
-  const aiDiv = document.createElement('div');
-  aiDiv.style.padding = '10px';
-  aiDiv.style.marginBottom = '10px';
-  aiDiv.style.backgroundColor = '#fafafa';
-  aiDiv.style.border = '1px solid #e4e4e7';
-  aiDiv.style.borderRadius = '6px';
-  aiDiv.style.whiteSpace = 'pre-wrap';
-  aiDiv.textContent = '...';
-  messagesContainer.appendChild(aiDiv);
-
-  const isGoogle = hostInput.toLowerCase().includes('google');
+  let fullChat = "";
   
-  let url = hostInput;
-  let headers = { 'Content-Type': 'application/json' };
-  let body = {};
+  window.chatPlugins = window.chatPlugins || {};
+  window.chatPlugins.logger = {
+    callback: async function (currentPrompt, chatHistory) {
+      console.log("Transformed payload intercept:", currentPrompt);
+      return currentPrompt;
+    }
+  };
 
-  if (isGoogle) {
-    const baseHost = hostInput.replace(/\/$/, "");
-    url = `${baseHost}/${nameInput}:streamGenerateContent?key=${keyInput}&alt=sse`;
-    body = {
-      contents: [{ role: "user", parts: [{ text: chatHistoryString }] }]
-    };
-  } else {
-    headers['Authorization'] = `Bearer ${keyInput}`;
-    body = {
-      model: nameInput,
-      stream: true,
-      messages: [{ role: "user", content: chatHistoryString }]
-    };
-  }
+  const submitBtn = document.querySelector('.chat-footer button');
+  const textarea = document.getElementById('user-input');
+  const chatMessages = document.querySelector('.chat-messages');
+  
+  const inModel = document.getElementById('model-name');
+  const inHost = document.getElementById('model-host');
+  const inKey = document.getElementById('api-key');
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(body)
-    });
+  async function processChat() {
+    const rawPrompt = textarea.value;
+    if (!rawPrompt.trim()) return;
 
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
+    textarea.value = "";
+
+    const userLine = document.createElement('div');
+    userLine.style.marginBottom = "15px";
+    userLine.style.whiteSpace = "pre-wrap";
+    userLine.innerHTML = "<strong>User:</strong><br/>";
+    userLine.appendChild(document.createTextNode(rawPrompt));
+    chatMessages.appendChild(userLine);
+
+    let transformedPrompt = rawPrompt;
+    for (const plugin in window.chatPlugins) {
+      if (window.chatPlugins[plugin] && typeof window.chatPlugins[plugin].callback === 'function') {
+        transformedPrompt = await window.chatPlugins[plugin].callback(transformedPrompt, fullChat);
+      }
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let aiFullResponse = "";
-    aiDiv.textContent = "";
+    const prependHistoryText = fullChat ? fullChat + "\n\n" : "";
+    const payloadText = prependHistoryText + "User: " + transformedPrompt + "\nAssistant: ";
+    
+    fullChat = prependHistoryText + "User: " + rawPrompt + "\nAssistant: ";
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
+    const assistantLine = document.createElement('div');
+    assistantLine.style.marginBottom = "15px";
+    assistantLine.style.whiteSpace = "pre-wrap";
+    assistantLine.innerHTML = "<strong>Assistant:</strong><br/>";
+    const assistantContentSpan = document.createElement('span');
+    assistantLine.appendChild(assistantContentSpan);
+    chatMessages.appendChild(assistantLine);
 
-      for (const line of lines) {
-        if (line.startsWith('data:')) {
-          const dataStr = line.slice(5).trim();
-          if (dataStr === '[DONE]' || !dataStr) continue;
+    const modelName = inModel.value;
+    const modelHost = inHost.value;
+    const apiKey = inKey.value;
 
-          try {
-            const data = JSON.parse(dataStr);
-            let textPiece = "";
-            if (isGoogle) {
-              textPiece = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            } else {
-              textPiece = data.choices?.[0]?.delta?.content || "";
+    localStorage.setItem('m', modelName);
+    localStorage.setItem('h', modelHost);
+    localStorage.setItem('k', apiKey);
+
+    const headers = { "Content-Type": "application/json" };
+    if (apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
+
+    const payload = {
+      model: modelName,
+      messages: [{ role: "user", content: payloadText }],
+      stream: true
+    };
+
+    try {
+      const response = await fetch(modelHost, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        assistantContentSpan.innerText = "Error: HTTP " + response.status;
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+      let aiMessage = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop(); 
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith("data: ")) {
+            const dataStr = trimmed.substring(6).trim();
+            if (dataStr === "[DONE]") continue;
+            try {
+              const data = JSON.parse(dataStr);
+              const content = data.choices?.[0]?.delta?.content;
+              if (content) {
+                aiMessage += content;
+                assistantContentSpan.appendChild(document.createTextNode(content));
+              }
+            } catch (e) {
             }
-            aiFullResponse += textPiece;
-            aiDiv.textContent = aiFullResponse;
-          } catch (e) {
-            
           }
         }
       }
+      
+      fullChat += aiMessage;
+
+    } catch (err) {
+      assistantContentSpan.appendChild(document.createTextNode("\nError: " + err.message));
     }
-    chatHistoryString += "\nAI: " + aiFullResponse;
-  } catch (err) {
-    aiDiv.textContent = `[Request failed: ${err.message}]`;
   }
-}
 
-document.querySelector('.chat-submit').addEventListener('click', submitChat);
+  submitBtn.addEventListener('click', processChat);
 
-document.querySelector('.chat-textarea').addEventListener('keydown', function(e) {
-  if (e.ctrlKey && e.key === 'Enter') {
-    e.preventDefault();
-    submitChat();
-  }
-});
+  textarea.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+      processChat();
+    }
+  });
 </script><script>
-(function() {
-    window.chatPlugins.linkContextFetcher = {
-        callback: function(currentPrompt, fullChat) {
-            let transformedChat = fullChat;
-            const matches = [...currentPrompt.matchAll(/\[\[([^\]]+)\]\]/g)];
-            if (matches.length === 0) return fullChat;
+window.chatPlugins = window.chatPlugins || {};
 
-            const promises = matches.map(match => {
-                const originalTag = match[0];
-                const inner = match[1];
-                let name = window.DB;
-                let link = inner;
-                
-                if (inner.includes('#')) {
-                    const parts = inner.split('#', 2);
-                    if (parts[0]) name = parts[0];
-                    link = parts[1];
-                }
+window.chatPlugins.contextLinker = {
+  callback: async function(currentPrompt, chatHistory) {
+    async function processLinks(text, visited, depth) {
+      if (depth > 2 || typeof text !== "string") return text;
 
-                return new Promise(resolve => {
-                    try {
-                        read(link, name).then(context => {
-                            console.log(`Link: ${name}#${link}`, context);
-                            const wrappedContext = `<context file="${name}#${link}">\n${context}\n</context>`;
-                            transformedChat = transformedChat.split(originalTag).join(wrappedContext);
-                            resolve();
-                        }).catch(e => {
-                            resolve();
-                        });
-                    } catch (e) {
-                        resolve();
-                    }
-                });
-            });
+      const linkRegex = /\[\[(.*?)\]\]/g;
+      const matches = [...text.matchAll(linkRegex)];
+      
+      if (matches.length === 0) return text;
 
-            return Promise.all(promises).then(() => transformedChat);
+      const fetchPromises = matches.map(async (match) => {
+        const originalText = match[0];
+        let innerText = match[1];
+        let name = window.DB;
+        let link = innerText;
+
+        if (innerText.includes('#')) {
+          const parts = innerText.split('#');
+          name = parts[0] || window.DB;
+          link = parts[1];
         }
-    };
 
-    const origFetch = window.fetch;
-    window.fetch = async function(url, options) {
-        if (typeof chatHistoryString !== 'undefined' && chatHistoryString instanceof Promise) {
-            try {
-                const resolvedChat = await chatHistoryString;
-                chatHistoryString = resolvedChat;
-                
-                if (options && options.body) {
-                    const bodyObj = JSON.parse(options.body);
-                    if (bodyObj.contents && bodyObj.contents[0]?.parts?.[0]) {
-                        bodyObj.contents[0].parts[0].text = resolvedChat;
-                    } else if (bodyObj.messages && bodyObj.messages[0]) {
-                        bodyObj.messages[0].content = resolvedChat;
-                    }
-                    options.body = JSON.stringify(bodyObj);
-                }
-            } catch (e) {
-                // Silently bypass block stringification failures
-            }
+        const fullRef = `${name}#${link}`;
+
+        if (visited.has(fullRef)) {
+          return { original: originalText, replacement: originalText };
         }
-        return origFetch.call(this, url, options);
-    };
-})();
+
+        visited.add(fullRef);
+
+        try {
+          let contextData = await read(link, name);
+          if (contextData) {
+            console.log(`Link fetched: ${fullRef}`, contextData);
+            let expandedContext = await processLinks(contextData, visited, depth + 1);
+            let contextWrapped = `<context file="${fullRef}">\n${expandedContext}\n</context>`;
+            return { original: originalText, replacement: contextWrapped };
+          }
+        } catch (e) {
+          // Silently quiet fetch errors
+        }
+
+        return { original: originalText, replacement: originalText };
+      });
+
+      const resolvedData = await Promise.all(fetchPromises);
+      
+      let newText = text;
+      for (const res of resolvedData) {
+        newText = newText.split(res.original).join(res.replacement);
+      }
+      
+      return newText;
+    }
+
+    return await processLinks(currentPrompt, new Set(), 0);
+  }
+};
 </script>
