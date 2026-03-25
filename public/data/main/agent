@@ -1,87 +1,105 @@
 <style>
-  .app-wrapper {
+  .app-container {
     display: flex;
     flex-direction: column;
     height: 100vh;
     box-sizing: border-box;
     font-family: sans-serif;
   }
-  header {
-    display: flex;
-    padding: 15px;
-    border-bottom: 1px solid #ccc;
-    background-color: #f9f9f9;
+  .header {
+    background-color: #f1f5f9;
+    padding: 20px;
+    border-bottom: 1px solid #cbd5e1;
+    flex-shrink: 0;
+  }
+  .header-title {
+    margin: 0 0 15px 0;
+    font-size: 24px;
+    color: #1e293b;
   }
   .model-details {
     display: flex;
-    gap: 15px;
+    gap: 20px;
     align-items: center;
-    flex-wrap: wrap;
   }
   .model-details label {
     display: flex;
     flex-direction: column;
-    font-size: 12px;
-    color: #333;
+    font-size: 14px;
+    font-weight: bold;
+    color: #475569;
+    gap: 5px;
   }
   .model-details input {
-    margin-top: 4px;
-    padding: 6px;
-    border: 1px solid #ccc;
+    padding: 5px;
+    border: 1px solid #94a3b8;
     border-radius: 4px;
   }
-  .split-view-container {
+  .split-view {
     display: flex;
     flex-direction: row;
-    flex: 1;
+    flex-grow: 1;
     overflow: hidden;
   }
-  .left-panel, .right-panel {
+  .left-panel {
     width: 50%;
     overflow-y: auto;
+    background-color: #f8fafc;
+    border-right: 1px solid #cbd5e1;
+    padding: 20px;
     box-sizing: border-box;
   }
-  .left-panel {
-    border-right: 1px solid #ccc;
-    background-color: #fafafa;
-  }
   .right-panel {
+    width: 50%;
+    overflow-y: auto;
     background-color: #ffffff;
+    padding: 20px;
+    box-sizing: border-box;
   }
-  footer {
+  .footer {
     display: flex;
-    padding: 15px;
-    gap: 10px;
-    border-top: 1px solid #ccc;
-    background-color: #f9f9f9;
-    align-items: flex-end;
+    gap: 15px;
+    background-color: #f1f5f9;
+    padding: 20px;
+    border-top: 1px solid #cbd5e1;
+    flex-shrink: 0;
+    align-items: stretch;
   }
-  textarea {
-    flex: 1;
+  .footer textarea {
+    flex-grow: 1;
     resize: vertical;
-    min-height: 50px;
+    min-height: 60px;
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid #94a3b8;
     border-radius: 4px;
     font-family: inherit;
   }
-  button {
+  .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+  }
+  .button-group button {
     padding: 10px 20px;
-    height: 50px;
-    background-color: #007bff;
-    color: white;
+    cursor: pointer;
     border: none;
     border-radius: 4px;
-    cursor: pointer;
     font-weight: bold;
   }
-  button:hover {
-    background-color: #0056b3;
+  .submit-btn {
+    background-color: #0ea5e9;
+    color: white;
+  }
+  .stop-btn {
+    background-color: #ef4444;
+    color: white;
   }
 </style>
 
-<div class="app-wrapper">
-  <header>
+<div class="app-container">
+  <div class="header">
+    <h1 class="header-title">Autonomous Agent</h1>
     <div class="model-details">
       <label>
         Model Name
@@ -96,26 +114,25 @@
         <input type="password" />
       </label>
     </div>
-  </header>
-  
-  <div class="split-view-container">
+  </div>
+
+  <div class="split-view">
     <div class="left-panel"></div>
     <div class="right-panel"></div>
   </div>
-  
-  <footer>
+
+  <div class="footer">
     <textarea></textarea>
-    <button type="button">Submit</button>
-  </footer>
+    <div class="button-group">
+      <button type="button" class="submit-btn">Submit</button>
+      <button type="button" class="stop-btn">Stop</button>
+    </div>
+  </div>
 </div><script>
   const inputs = document.querySelectorAll('.model-details input');
-  const m = localStorage.getItem('m');
-  const h = localStorage.getItem('h');
-  const k = localStorage.getItem('k');
-  
-  if (m !== null && inputs[0]) inputs[0].value = m;
-  if (h !== null && inputs[1]) inputs[1].value = h;
-  if (k !== null && inputs[2]) inputs[2].value = k;
+  inputs[0].value = localStorage.getItem('m') || '';
+  inputs[1].value = localStorage.getItem('h') || '';
+  inputs[2].value = localStorage.getItem('k') || '';
 </script><script>
 window.BaseTools = {};
 
@@ -142,30 +159,30 @@ window.BaseTools["list_files"] = {
 };
 </script><script>
 window.chatHistory = [];
+window.stopAgent = false;
 
 async function runAgent(userMessage) {
+  if (!userMessage.trim()) return;
+  
   const rightPanel = document.querySelector('.right-panel');
   const leftPanel = document.querySelector('.left-panel');
   
-  const userDiv = document.createElement('div');
-  userDiv.style.padding = '10px';
-  userDiv.style.borderBottom = '1px solid #ccc';
-  userDiv.style.backgroundColor = '#f1f8ff';
-  userDiv.innerHTML = `<strong>User:</strong> <span style="white-space: pre-wrap;">${userMessage}</span>`;
+  let userDiv = document.createElement('div');
+  userDiv.style.marginBottom = "15px";
+  userDiv.style.borderBottom = "1px solid #cbd5e1";
+  userDiv.style.paddingBottom = "5px";
+  userDiv.innerHTML = "<strong>User:</strong> " + userMessage;
   rightPanel.appendChild(userDiv);
   
   window.chatHistory.push({ role: "User", content: userMessage });
   
-  let loopCount = 0;
-  let resolved = false;
+  let errorCount = 0;
   
-  while (loopCount < 7) {
-    loopCount++;
-    
+  while (true) {
     let activeTools = Object.entries(window.BaseTools).map(x => x[0] + ' - ' + x[1].description);
     let matchedKeys = await keys(IDBKeyRange.bound('tool', 'tool\uffff'));
     
-    for (const k of matchedKeys) {
+    for (let k of matchedKeys) {
       let c = await read(k);
       let desc = "";
       if (c && c.includes("/*")) {
@@ -174,65 +191,75 @@ async function runAgent(userMessage) {
       activeTools.push(k + ' - ' + desc);
     }
     
-    let systemPrompt = "You are an autonomous AI. Output ONLY valid JSON. If the user asks about other namespaces or databases, proactively use tools to investigate. To use a tool, output exactly: {\"thought\": \"reasoning\", \"action\": \"tool_name\", \"action_input\": \"input\"}. For the final answer, output exactly: {\"thought\": \"reasoning\", \"answer\": \"final message\"}. DO NOT wrap your response in markdown blocks.";
+    let systemPrompt = `You are an autonomous AI. Output ONLY valid JSON. If the user asks about other namespaces or databases, proactively use tools to investigate. To use a tool, output exactly: {"thought": "reasoning", "action": "tool_name", "action_input": "input"}. For the final answer, output exactly: {"thought": "reasoning", "answer": "final message"}. DO NOT wrap your response in markdown blocks.`;
+    
     systemPrompt += "\nAVAILABLE TOOLS:\n" + activeTools.join('\n');
-    let fullPrompt = systemPrompt + "\n\nCHAT HISTORY:\n" + JSON.stringify(window.chatHistory);
     
-    const inputs = document.querySelectorAll('.model-details input');
-    const m = inputs[0].value;
-    const h = inputs[1].value;
-    const k_api = inputs[2].value;
+    if (window.stopAgent === true) {
+      systemPrompt += '\nUSER OVERRIDE: Stop executing tools immediately. Evaluate observations and output your final {"answer": "final message"} object.';
+      window.stopAgent = false;
+    }
     
-    const u = {
-      model: m,
-      messages: [{ role: "user", content: fullPrompt }],
+    const uiInputs = document.querySelectorAll('.model-details input');
+    const modelName = uiInputs[0].value;
+    const modelHost = uiInputs[1].value;
+    const apiKey = uiInputs[2].value;
+    
+    let payload = {
+      model: modelName,
+      messages: [{ 
+        role: "user", 
+        content: systemPrompt + "\n\nCHAT HISTORY:\n" + JSON.stringify(window.chatHistory) 
+      }],
       stream: false
     };
     
-    const d = { "Content-Type": "application/json" };
-    if (k_api) {
-      d.Authorization = `Bearer ${k_api}`;
+    let headers = { "Content-Type": "application/json" };
+    if (apiKey) {
+      headers.Authorization = `Bearer ${apiKey}`;
     }
     
     let aiResponse = "";
     try {
-      let a = await fetch(h, {
+      let res = await fetch(modelHost, {
         method: "POST",
-        headers: d,
-        body: JSON.stringify(u)
+        headers: headers,
+        body: JSON.stringify(payload)
       });
-      let r = await a.json();
-      aiResponse = r.message?.content || r.choices?.[0]?.message?.content || JSON.stringify(r);
+      let data = await res.json();
+      aiResponse = data.message?.content || data.choices?.[0]?.message?.content || "";
     } catch (e) {
-      aiResponse = e.message;
+      aiResponse = e.message || "Fetch generic error";
     }
     
-    const aiDiv = document.createElement('div');
-    aiDiv.style.padding = '8px';
-    aiDiv.style.borderBottom = '1px solid #ddd';
-    aiDiv.style.fontSize = '12px';
-    aiDiv.style.fontFamily = 'monospace';
-    aiDiv.style.whiteSpace = 'pre-wrap';
-    aiDiv.textContent = `Iteration ${loopCount}\n${aiResponse}`;
-    leftPanel.appendChild(aiDiv);
+    let aiPre = document.createElement('pre');
+    aiPre.style.whiteSpace = "pre-wrap";
+    aiPre.style.backgroundColor = "#e2e8f0";
+    aiPre.style.padding = "10px";
+    aiPre.style.margin = "10px 0";
+    aiPre.textContent = aiResponse;
+    leftPanel.appendChild(aiPre);
     
-    let parsed;
+    let parsed = null;
     try {
-      let startIdx = aiResponse.indexOf('{');
-      let endIdx = aiResponse.lastIndexOf('}');
-      if (startIdx === -1 || endIdx === -1) {
-        throw new Error("Missing JSON brackets");
-      }
-      let jsonString = aiResponse.slice(startIdx, endIdx + 1);
-      parsed = JSON.parse(jsonString);
+      let firstIdx = aiResponse.indexOf('{');
+      let lastIdx = aiResponse.lastIndexOf('}');
+      if (firstIdx === -1 || lastIdx === -1) throw new Error("JSON boundaries not found.");
+      let jsonStr = aiResponse.substring(firstIdx, lastIdx + 1);
+      parsed = JSON.parse(jsonStr);
+      errorCount = 0;
     } catch (e) {
       window.chatHistory.push({ role: "System", content: "Error: Invalid JSON output." });
+      errorCount++;
+      if (errorCount >= 7) break;
       continue;
     }
     
     if (parsed.action) {
       let toolResult = "";
       let code = "";
+      let loopBreakTriggered = false;
+      
       try {
         if (window.BaseTools[parsed.action]) {
           toolResult = await window.BaseTools[parsed.action].run(parsed.action_input);
@@ -247,70 +274,63 @@ async function runAgent(userMessage) {
       } catch (err) {
         console.error("Tool Execution Failed:", err, code);
         toolResult = "Tool Execution Error: " + err.message + "\nStack: " + err.stack + "\nCode evaluated:\n" + code;
+        errorCount++;
+        if (errorCount >= 7) {
+          loopBreakTriggered = true;
+        }
       }
       
-      const obsDiv = document.createElement('div');
-      obsDiv.style.padding = '8px';
-      obsDiv.style.borderBottom = '1px solid #ddd';
-      obsDiv.style.fontSize = '12px';
-      obsDiv.style.fontFamily = 'monospace';
-      obsDiv.style.backgroundColor = '#fffbe6';
-      obsDiv.style.whiteSpace = 'pre-wrap';
+      let obsDiv = document.createElement('div');
+      obsDiv.style.color = "#0369a1";
+      obsDiv.style.marginBottom = "10px";
       obsDiv.textContent = "OBSERVATION: " + toolResult;
       leftPanel.appendChild(obsDiv);
       
       window.chatHistory.push({ role: "System", content: "OBSERVATION: " + toolResult });
+      
+      if (loopBreakTriggered) break;
       continue;
     }
     
     if (parsed.answer) {
-      const agentDiv = document.createElement('div');
-      agentDiv.style.padding = '10px';
-      agentDiv.style.borderBottom = '1px solid #ccc';
-      agentDiv.style.backgroundColor = '#e6fffa';
-      agentDiv.innerHTML = `<strong>Agent:</strong> <span style="white-space: pre-wrap;">${parsed.answer}</span>`;
-      rightPanel.appendChild(agentDiv);
+      let ansDiv = document.createElement('div');
+      ansDiv.style.marginBottom = "15px";
+      ansDiv.innerHTML = "<strong>Agent:</strong> " + parsed.answer;
+      rightPanel.appendChild(ansDiv);
       
       window.chatHistory.push({ role: "Agent", content: parsed.answer });
-      resolved = true;
       break;
     }
   }
   
-  if (!resolved && loopCount >= 7) {
-    const diagStr = "System Diagnostics: Agent exhausted 7 reasoning steps. Aborted. Check left-panel for looping traces.";
-    const diagDiv = document.createElement('div');
-    diagDiv.style.padding = '10px';
-    diagDiv.style.borderBottom = '1px solid #ccc';
-    diagDiv.style.backgroundColor = '#ffe6e6';
-    diagDiv.style.color = 'red';
-    diagDiv.textContent = diagStr;
-    rightPanel.appendChild(diagDiv);
-    
-    window.chatHistory.push({ role: "System", content: diagStr });
+  if (errorCount >= 7) {
+    let errDiv = document.createElement('div');
+    errDiv.style.color = "red";
+    errDiv.style.marginTop = "10px";
+    errDiv.textContent = "System Diagnostics: Agent aborted after 7 consecutive errors. Check left-panel for looping traces.";
+    rightPanel.appendChild(errDiv);
+    window.chatHistory.push({ role: "System", content: "System Diagnostics: Agent aborted after 7 consecutive errors. Check left-panel for looping traces." });
   }
 }
 
-const textarea = document.querySelector('footer textarea');
-const button = document.querySelector('footer button');
-
-button.addEventListener('click', (e) => {
+document.querySelector('.submit-btn').addEventListener('click', (e) => {
   e.preventDefault();
-  const val = textarea.value.trim();
-  if (val) {
-    textarea.value = '';
+  const textarea = document.querySelector('.footer textarea');
+  const val = textarea.value;
+  textarea.value = '';
+  runAgent(val);
+});
+
+document.querySelector('.footer textarea').addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    const val = e.target.value;
+    e.target.value = '';
     runAgent(val);
   }
 });
 
-textarea.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-    e.preventDefault();
-    const val = textarea.value.trim();
-    if (val) {
-      textarea.value = '';
-      runAgent(val);
-    }
-  }
+document.querySelector('.stop-btn').addEventListener('click', () => {
+  window.stopAgent = true;
 });
 </script>
