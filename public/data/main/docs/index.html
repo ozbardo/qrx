@@ -4,8 +4,11 @@
 L = location
 LP = L.pathname
 $L = localStorage
+G = 'globals'
+C = 'cache'
 T = 'target'
 TL = 'toLowerCase'
+RO = 'readonly'
 HR=history.replaceState.bind(history)
 
 // default indexedDB name
@@ -40,16 +43,16 @@ getDB = (n = DB, t = FILES) => {
 // returns all keys in database
 // q: query
 // d: database
-keys = (q, d) => queryDB(tx('readonly', d).getAllKeys(q))
+keys = (q, d) => queryDB(tx(RO, d).getAllKeys(q))
 
 // db transaction
 // m: transaction mode
 // d: database
-tx = (m = 'readonly', d = db, t = FILES) => d.transaction(t, m).objectStore(t)
+tx = (m = RO, d = db, t = FILES) => d.transaction(t, m).objectStore(t)
 write=async(v,k,d=db,n=filename)=>(d=d.trim?await getDB(d):d,queryDB(tx('readwrite',d).put(v,k||n)))
 read = async (k, d = db) => {
   d = d.trim ? await getDB(d) : d
-  let v = await queryDB(tx('readonly', d).get(k || filename))
+  let v = await queryDB(tx(RO, d).get(k || filename))
   return !v && d == db && os ? read(k, os) : v
 }
 
@@ -61,7 +64,7 @@ boot = async () => {
     b = await keys(q)
   if (os) b = [...new Set([...b, ...await keys(q, os)])]
   for (let f of b) {
-    try { (new Function('globals', await read(f)))(this) }
+    try { (new Function(G, await read(f)))(this) }
     catch (e) { console.error(f, e) }
   }
   run()
@@ -104,7 +107,14 @@ ${((val == 'src' ? S.innerText : await read(val)) || '')}`
     else if ('erup'.includes(k)) {
       s = val
       if (k == 'r') s = (val == 'src' ? S.innerText : await read(val)) || ''
-      else if (k == 'u') s = await (await fetch(val)).text()
+      else if (k == 'u') {
+        try {
+          s = await (await fetch(val)).text()
+          await write(s, val, C)
+        } catch (e) {
+          s = await read(val, C) || e
+        }
+      }
       else if (k == 'p') s = await gen((ctx ? ctx + '\n' : '') + v, val)
       v = app ? v + s : s
     }
@@ -114,14 +124,14 @@ ${((val == 'src' ? S.innerText : await read(val)) || '')}`
     else if (k == 'x') {
       try {
         let c = val || v
-        r = await (new Function('globals', 'v', c))(this, v)
+        r = await (new Function(G, 'v', c))(this, v)
         if (r !== void 0) v = r
       } catch (e) { console.error(e) }
     }
     // autoload other params
     else if (c = await read(k)) {
       try {
-        r = await (new Function('globals', 'v', 'arg', c))(this, v, val)
+        r = await (new Function(G, 'v', 'arg', c))(this, v, val)
         if (r !== void 0) v = r
       } catch (e) { v = app ? v + c : c }
     }
