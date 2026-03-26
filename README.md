@@ -10,15 +10,7 @@ This qr encodes an html file turning any browser capable device since the 90s in
 
 If you open that qr in the browser and scan or click the rest of the **hyperlinks** in this document that back to it you, will end up with something like [**https://qrx.world**](https://qrx.world) 
 
-
-
-
-
 -----------------------------
-
-
-
-
 
 # Core flags
 The above Kernel exposes the following URL `?query` params
@@ -31,10 +23,19 @@ The above Kernel exposes the following URL `?query` params
 | **`k, m, s, h`** | **AI Config**. Sets the API Key (`k`), Model (`m`), System Prompt (`s`), or Host (`h`) in `localStorage`. |
 | **`e`** | **Echo**. Pushes the raw value directly into the accumulator (hardcoded strings/HTML). |
 | **`r`** | **Read**. Reads a file from the database (or `src` for source code) into the accumulator. |
-| **`u`** | **URL**. Fetches text from a remote URL and puts it into the accumulator. |
+| **`u`** | **URL**. Fetches text from a remote URL. Implements a **Network-First, Cache-Fallback** mechanism. Successful fetches are passively synced to a discrete `'cache'` IndexedDB namespace. If your OS is offline, it automatically catches the failure and serves the file locally. |
 | **`p`** | **Prompt**. Sends the current context + accumulator + value to the LLM. The result becomes the new accumulator. |
 | **`w`** | **Write**. Saves the current accumulator content to the database under the name defined by `f`. |
 | **`x`** | **Execute**. Runs the value (or the current accumulator if value is empty) as JavaScript. |
+
+# Hotloading System Prompts
+System prompts can get massive, making them impossible to pass via standard URL configuration (`?s=You are a...`) without hitting browser parameter length constraints. 
+
+Instead, you can save your system prompt as a standard text file in your database (e.g., under `system`) and use the `?x` (execute) trick to read it from the database and inject it straight into the kernel's local storage:
+
+`?x=read('system').then(v => localStorage.setItem('s', v))`
+
+Because `?x` evaluates dynamically via `new Function` without an `async` wrapper, using the native Promise `.then()` chain successfully prevents top-level `await` syntax errors. This permanently sets your operating system's behavioral framework securely behind the scenes.
 
 # Globals
 The kernel exposes the following variables and methods
