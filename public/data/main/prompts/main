@@ -60,4 +60,20 @@
 &w&a=1&p=TASK: make the refresh icon reload the window iframe
   - use event delegation to check if the clicked target matches the template window refresh buttons
   - if so reload that windows iframe
+&w&a=1&p=TASK: output a SCRIPT tag that adds global Speech-to-Text with DEEP DEBUGGING
+  - initialize window.SpeechRecognition || window.webkitSpeechRecognition with continuous = true and interimResults = false
+  - console.log("Speech API found:", !!(window.SpeechRecognition || window.webkitSpeechRecognition))
+  - create a 🎙️ button and append it to the taskbar. console.log("Mic button added")
+  - on the button's 'mousedown' event: call event.preventDefault() to prevent focus stealing, toggle a listening boolean, and console.log("Mic clicked. State listening:", state)
+  - when listening: change button text to 🔴 and call recognition.start() inside a try/catch that console.errors failures
+  - when stopped: change to 🎙️ and call recognition.stop()
+  - add recognition.onstart: console.log("Speech started successfully")
+  - add recognition.onerror: console.error("Speech error:", event.error)
+  - add recognition.onend: console.log("Speech ended"). if state is listening, set 200ms timeout to try recognition.start() again
+  - on recognition result: get the final transcript string and console.log("Heard:", transcript)
+  - traverse to find the focused field: var el = document.activeElement; console.log("Base active element:", el)
+  - while el is an IFRAME, wrap in try/catch: switch el to el.contentDocument.activeElement and console.log("Iframe active element:", el). catch and console.error the error.
+  - if el is an INPUT or TEXTAREA: console.log("Target found!", el), then append the transcript (adding a leading space if needed), update el.value, and dispatch a new Event('input', { bubbles: true })
+  - if el is NOT an input/textarea: console.warn("Active element is not a text field. Text discarded.")
+  - wrap in an async IIFE and use var for all variables
 &w

@@ -1073,4 +1073,103 @@
       });
     }
   })();
+</script><script>
+(async function() {
+  var SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  console.log("Speech API found:", !!SpeechAPI);
+
+  if (!SpeechAPI) return;
+
+  var recognition = new SpeechAPI();
+  recognition.continuous = true;
+  recognition.interimResults = false;
+
+  var taskbar = document.querySelector('.taskbar');
+  if (!taskbar) return;
+
+  var micBtn = document.createElement('button');
+  micBtn.textContent = '🎙️';
+  micBtn.style.marginLeft = '4px';
+  taskbar.appendChild(micBtn);
+  
+  console.log("Mic button added");
+
+  var state = false;
+
+  micBtn.addEventListener('mousedown', function(event) {
+    event.preventDefault();
+    state = !state;
+    console.log("Mic clicked. State listening:", state);
+
+    if (state) {
+      micBtn.textContent = '🔴';
+      try {
+        recognition.start();
+      } catch (err) {
+        console.error("Start failed:", err);
+      }
+    } else {
+      micBtn.textContent = '🎙️';
+      try {
+        recognition.stop();
+      } catch (err) {
+        console.error("Stop failed:", err);
+      }
+    }
+  });
+
+  recognition.onstart = function() {
+    console.log("Speech started successfully");
+  };
+
+  recognition.onerror = function(event) {
+    console.error("Speech error:", event.error);
+  };
+
+  recognition.onend = function() {
+    console.log("Speech ended");
+    if (state) {
+      setTimeout(function() {
+        try {
+          recognition.start();
+        } catch (err) {
+          console.error("Restart failed:", err);
+        }
+      }, 200);
+    }
+  };
+
+  recognition.onresult = function(event) {
+    var transcript = "";
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        transcript += event.results[i][0].transcript;
+      }
+    }
+    console.log("Heard:", transcript);
+
+    var el = document.activeElement;
+    console.log("Base active element:", el);
+
+    while (el && el.tagName === 'IFRAME') {
+      try {
+        el = el.contentDocument.activeElement;
+        console.log("Iframe active element:", el);
+      } catch (err) {
+        console.error(err);
+        break;
+      }
+    }
+
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+      console.log("Target found!", el);
+      var currentVal = el.value || "";
+      var prefix = (currentVal.length > 0 && currentVal.charAt(currentVal.length - 1) !== ' ') ? ' ' : '';
+      el.value = currentVal + prefix + transcript.trim();
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      console.warn("Active element is not a text field. Text discarded.");
+    }
+  };
+})();
 </script>
