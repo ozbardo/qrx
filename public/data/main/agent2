@@ -1,0 +1,337 @@
+<header style="display:flex;gap:12px;padding:12px;background:#1e1e1e;align-items:center;flex-wrap:wrap;">
+  <label style="color:#ccc;font-size:13px;font-family:sans-serif;">Model:
+    <input type="text" id="model-name" placeholder="e.g. gpt-4" style="margin-left:6px;padding:4px 8px;background:#2d2d2d;color:#fff;border:1px solid #444;border-radius:4px;">
+  </label>
+  <label style="color:#ccc;font-size:13px;font-family:sans-serif;">Host:
+    <input type="text" id="host" placeholder="e.g. https://api.openai.com" style="margin-left:6px;padding:4px 8px;background:#2d2d2d;color:#fff;border:1px solid #444;border-radius:4px;width:220px;">
+  </label>
+  <label style="color:#ccc;font-size:13px;font-family:sans-serif;">API Key:
+    <input type="password" id="apikey" placeholder="sk-..." style="margin-left:6px;padding:4px 8px;background:#2d2d2d;color:#fff;border:1px solid #444;border-radius:4px;width:200px;">
+  </label>
+</header>
+
+<div id="split-view" style="display:flex;flex-direction:row;flex:1;height:calc(100vh - 120px);overflow:hidden;">
+
+  <div id="left-panel" style="flex:1;border-right:2px solid #333;background:#141414;padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+    <div style="font-size:12px;font-weight:bold;color:#888;font-family:monospace;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #333;padding-bottom:6px;">Agent Thinking Log</div>
+    <div id="thinking-log" style="display:flex;flex-direction:column;gap:6px;">
+      <div style="background:#1e1e1e;border-left:3px solid #f0a500;padding:8px 10px;border-radius:4px;color:#ccc;font-family:monospace;font-size:12px;">
+        <span style="color:#f0a500;font-weight:bold;">[THOUGHT]</span> Waiting for input...
+      </div>
+      <div style="background:#1e1e1e;border-left:3px solid #4fc3f7;padding:8px 10px;border-radius:4px;color:#ccc;font-family:monospace;font-size:12px;">
+        <span style="color:#4fc3f7;font-weight:bold;">[ACTION]</span> No action taken yet.
+      </div>
+      <div style="background:#1e1e1e;border-left:3px solid #81c784;padding:8px 10px;border-radius:4px;color:#ccc;font-family:monospace;font-size:12px;">
+        <span style="color:#81c784;font-weight:bold;">[OBSERVE]</span> Awaiting observation...
+      </div>
+    </div>
+  </div>
+
+  <div id="right-panel" style="flex:1;background:#1a1a1a;padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+    <div style="font-size:12px;font-weight:bold;color:#888;font-family:monospace;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #333;padding-bottom:6px;">Chat &amp; Final Answers</div>
+    <div id="chat-log" style="display:flex;flex-direction:column;gap:10px;flex:1;">
+      <div style="align-self:flex-end;background:#2a5298;color:#fff;padding:8px 12px;border-radius:12px 12px 2px 12px;max-width:75%;font-family:sans-serif;font-size:13px;">
+        Hello! How can the agent help you?
+      </div>
+      <div style="align-self:flex-start;background:#2d2d2d;color:#e0e0e0;padding:8px 12px;border-radius:12px 12px 12px 2px;max-width:75%;font-family:sans-serif;font-size:13px;border-left:3px solid #81c784;">
+        <span style="font-size:11px;color:#81c784;font-weight:bold;display:block;margin-bottom:4px;">FINAL ANSWER</span>
+        Agent response will appear here.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1e1e1e;border-top:2px solid #333;">
+  <textarea id="user-input" rows="2" placeholder="Type your message to the agent..." style="flex:1;resize:none;background:#2d2d2d;color:#fff;border:1px solid #444;border-radius:6px;padding:8px 10px;font-family:sans-serif;font-size:13px;outline:none;"></textarea>
+  <button id="submit-btn" style="padding:10px 20px;background:#2a5298;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:sans-serif;font-size:13px;font-weight:bold;">Submit</button>
+  <button id="stop-btn" type="button" style="padding:10px 20px;background:#b71c1c;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:sans-serif;font-size:13px;font-weight:bold;">Stop</button>
+</footer><script>
+var modelInput = document.getElementById('model-name');
+var hostInput = document.getElementById('host');
+var apikeyInput = document.getElementById('apikey');
+
+var storedModel = localStorage.getItem('m');
+var storedHost = localStorage.getItem('h');
+var storedKey = localStorage.getItem('k');
+
+if (storedModel) modelInput.value = storedModel;
+if (storedHost) hostInput.value = storedHost;
+if (storedKey) apikeyInput.value = storedKey;
+
+window.chatHistory = [];
+window.agentState = { phase: 'INIT', queue: [], done: [], extracted: '', iteration: 0 };
+window.stopAgent = false;
+</script><script>
+function printLeft(text, isObservation) {
+  var div = document.createElement('div');
+  div.style.whiteSpace = 'pre-wrap';
+  if (isObservation) {
+    div.style.color = '#aa5500';
+  }
+  div.appendChild(document.createTextNode(text));
+  var leftPanel = document.getElementById('left-panel');
+  leftPanel.appendChild(div);
+  leftPanel.scrollTop = leftPanel.scrollHeight;
+}
+
+function printRight(text) {
+  var div = document.createElement('div');
+  div.style.whiteSpace = 'pre-wrap';
+  div.style.fontWeight = 'bold';
+  div.appendChild(document.createTextNode(text));
+  var rightPanel = document.getElementById('right-panel');
+  rightPanel.appendChild(div);
+  rightPanel.scrollTop = rightPanel.scrollHeight;
+}
+</script><script>
+window.BaseTools = {};
+
+window.BaseTools.read_file = {
+  description: "Reads a file. Input MUST be namespace#filename or just filename",
+  run: async function(input) {
+    var d = null;
+    var k = input;
+    if (input.includes('\x23')) {
+      var parts = input.split('\x23');
+      d = parts[0];
+      k = parts[1];
+    }
+    return await read(k, d || db) || "File not found";
+  }
+};
+
+window.BaseTools.list_files = {
+  description: "Lists files. Input can be a namespace string, or empty for the current database.",
+  run: async function(input) {
+    var targetDb = input ? await getDB(input) : db;
+    return JSON.stringify(await keys(undefined, targetDb));
+  }
+};
+</script><script>
+var window_AgentPlugins = {};
+window.AgentPlugins = window_AgentPlugins;
+
+window.registerPlugin = function(name, plugin) {
+  window.AgentPlugins[name] = plugin;
+};
+
+window.applyPlugins = async function(state, context) {
+  var plugins = Object.values(window.AgentPlugins);
+  for (var i = 0; i < plugins.length; i++) {
+    var plugin = plugins[i];
+    if (typeof plugin.transform === 'function') {
+      state = await plugin.transform(state, context);
+    }
+  }
+  return state;
+};
+</script><script>
+window.executeTool = async function(toolName, toolInput) {
+  try {
+    if (window.BaseTools[toolName]) {
+      return await window.BaseTools[toolName].run(toolInput);
+    } else {
+      var code = await read(toolName) || "";
+      if (code === "") {
+        throw new Error("Tool not found");
+      }
+      return await new Function('INPUT', 'return (async () => {' + code + '})()')(toolInput);
+    }
+  } catch (err) {
+    return "Tool Execution Error: " + err.message;
+  }
+};
+</script><script>
+window.getActiveToolsString = async function() {
+  var lines = [];
+
+  var baseKeys = Object.keys(window.BaseTools);
+  for (var i = 0; i < baseKeys.length; i++) {
+    var name = baseKeys[i];
+    var description = window.BaseTools[name].description || '';
+    lines.push(name + ': ' + description);
+  }
+
+  var matchedKeys = await keys(IDBKeyRange.bound('tool', 'tool\uffff'));
+  for (var j = 0; j < matchedKeys.length; j++) {
+    var key = matchedKeys[j];
+    var code = await read(key);
+    if (code) {
+      var description = '';
+      var match = code.match(/\/\*([\s\S]*?)\*\//);
+      if (match) {
+        description = match[1].trim();
+      }
+      lines.push(key + ': ' + description);
+    }
+  }
+
+  return lines.join('\n');
+};
+</script><script>
+window.fetchAI = async function(systemPrompt) {
+  var modelEl = document.getElementById('model-name');
+  var hostEl = document.getElementById('host');
+  var apikeyEl = document.getElementById('apikey');
+
+  var model = modelEl.value;
+  var host = hostEl.value;
+  var apikey = apikeyEl.value;
+
+  localStorage.setItem('m', model);
+  localStorage.setItem('h', host);
+  localStorage.setItem('k', apikey);
+
+  var messages = [{ role: 'system', content: systemPrompt }];
+  messages = messages.concat(window.chatHistory);
+
+  var headers = { 'Content-Type': 'application/json' };
+  if (apikey) {
+    headers['Authorization'] = 'Bearer ' + apikey;
+  }
+
+  var response = await fetch(host, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({
+      model: model,
+      messages: messages,
+      stream: false
+    })
+  });
+
+  var data = await response.json();
+
+  return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+    ? data.choices[0].message.content
+    : (data.message && data.message.content)
+    ? data.message.content
+    : '';
+};
+</script><script>
+function parseAction(text) {
+  var regex = /<<ACTION:\s*([^>]+)>>\n([\s\S]*?)(?=<<|$)/;
+  var match = text.match(regex);
+  if (match) {
+    return { name: match[1].trim(), input: match[2].trim() };
+  }
+  return null;
+}
+
+window.parseAction = parseAction;
+
+function parseAnswer(text) {
+  var regex = /<<ANSWER>>\n([\s\S]*)/;
+  var match = text.match(regex);
+  if (match) {
+    return match[1].trim();
+  }
+  return null;
+}
+
+window.parseAnswer = parseAnswer;
+</script><script>
+window.runAgent = async function(userMessage) {
+  window.agentState = { phase: 'INIT', queue: [], done: [], extracted: '', iteration: 0 };
+  window.stopAgent = false;
+
+  printRight(userMessage);
+  window.chatHistory.push({ role: 'user', content: userMessage });
+
+  var errorCount = 0;
+  var lastObservation = "";
+
+  while (true) {
+    try {
+      window.agentState.iteration++;
+
+      var toolsString = await window.getActiveToolsString();
+
+      window.agentState = await window.applyPlugins(window.agentState, { userMessage: userMessage });
+
+      var systemPrompt = "You are an autonomous AI agent. DO NOT converse. ONLY output ONE format:\n<<ACTION: toolName>>\ninput\nOR\n<<ANSWER>>\ntext\n\nTOOLS:\n" + toolsString + "\n\nSTATE:\n" + JSON.stringify(window.agentState);
+
+      if (lastObservation !== "") {
+        systemPrompt += "\nLAST OBSERVATION (Ephemeral):\n" + lastObservation;
+      }
+
+      if (window.stopAgent === true) {
+        systemPrompt += "\nUSER OVERRIDE: Stop immediately. Output <<ANSWER>>.";
+        window.stopAgent = false;
+      }
+
+      var aiResponse = await window.fetchAI(systemPrompt);
+
+      printLeft(aiResponse, false);
+
+      var action = window.parseAction(aiResponse);
+
+      if (action) {
+        var result = await window.executeTool(action.name, action.input);
+        printLeft("OBSERVATION: " + result, true);
+        lastObservation = result;
+        if (action.name === 'read_file') {
+          window.agentState.done.push(action.input);
+        }
+        continue;
+      }
+
+      var answer = window.parseAnswer(aiResponse);
+
+      if (answer) {
+        printRight(answer);
+        window.chatHistory.push({ role: 'assistant', content: answer });
+        break;
+      }
+
+      window.chatHistory.push({ role: 'system', content: 'SYSTEM WARNING: Do not converse. You MUST output <<ACTION: name>> or <<ANSWER>>.' });
+      lastObservation = "";
+      continue;
+
+    } catch(e) {
+      errorCount++;
+      printLeft("Error: " + e.message, true);
+      if (errorCount >= 7) {
+        break;
+      }
+    }
+  }
+};
+
+document.getElementById('submit-btn').addEventListener('click', async function() {
+  var input = document.getElementById('user-input');
+  var msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  await window.runAgent(msg);
+});
+
+document.getElementById('stop-btn').addEventListener('click', function() {
+  window.stopAgent = true;
+});
+</script><script>
+var submitBtn = document.getElementById('submit-btn');
+var userInput = document.getElementById('user-input');
+var stopBtn = document.getElementById('stop-btn');
+
+function handleSubmit(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  if (!userInput.value.trim()) return;
+  var msg = userInput.value;
+  userInput.value = '';
+  window.runAgent(msg);
+}
+
+submitBtn.addEventListener('click', handleSubmit);
+
+userInput.addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.key === 'Enter') {
+    handleSubmit(e);
+  }
+});
+
+stopBtn.addEventListener('click', function() {
+  window.stopAgent = true;
+});
+</script>

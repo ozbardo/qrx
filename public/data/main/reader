@@ -1,479 +1,553 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RSS Reader</title>
 <style>
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #ffffff;
-    color: #333333;
+  * {
+    box-sizing: border-box;
+    font-family: sans-serif;
   }
   
-  .container {
+  .app-container {
     display: flex;
     flex-direction: row;
     height: 100vh;
+    width: 100vw;
+    margin: 0;
+    overflow: hidden;
   }
-  
+
   .sidebar {
-    width: 300px;
-    background-color: #f7f9fa;
-    border-right: 1px solid #e1e4e8;
-    padding: 20px;
-    box-sizing: border-box;
+    width: 250px;
+    background-color: #f4f4f5;
+    border-right: 1px solid #e4e4e7;
     display: flex;
     flex-direction: column;
+    padding: 1rem;
   }
-  
-  .sidebar-header {
-    margin-top: 0;
-    margin-bottom: 24px;
-    font-size: 20px;
-    color: #24292e;
+
+  .sidebar header {
+    margin-bottom: 1.5rem;
   }
-  
-  .add-feed-controls {
+
+  .sidebar header h1 {
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .add-feed-form {
     display: flex;
-    gap: 8px;
-    margin-bottom: 24px;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
   }
-  
-  .add-feed-controls input[type="url"] {
-    flex-grow: 1;
-    padding: 8px 12px;
-    border: 1px solid #d1d5da;
+
+  .add-feed-form input {
+    padding: 0.5rem;
+    border: 1px solid #d4d4d8;
     border-radius: 4px;
-    font-size: 14px;
   }
-  
-  .add-feed-controls button {
-    padding: 8px 16px;
-    background-color: #0366d6;
+
+  .add-feed-form button {
+    padding: 0.5rem;
+    background-color: #2563eb;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
   }
-  
-  .add-feed-controls button:hover {
-    background-color: #005cc5;
+
+  .add-feed-form button:hover {
+    background-color: #1d4ed8;
   }
-  
+
   .nav-filters {
-    list-style-type: none;
+    list-style: none;
     padding: 0;
-    margin: 0 0 24px 0;
+    margin: 0 0 1.5rem 0;
   }
-  
+
   .nav-filters li {
-    padding: 10px 12px;
-    margin-bottom: 4px;
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;
     border-radius: 4px;
     cursor: pointer;
     font-weight: 500;
-    color: #586069;
   }
-  
+
   .nav-filters li:hover {
-    background-color: #e1e4e8;
-    color: #24292e;
+    background-color: #e4e4e7;
   }
-  
+
   .feeds-list {
-    flex-grow: 1;
+    flex: 1;
     overflow-y: auto;
   }
-  
+
   .main-content {
-    flex-grow: 1;
+    flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 24px 40px;
-    box-sizing: border-box;
     background-color: #ffffff;
-    overflow-y: auto;
   }
-  
+
   .main-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #e1e4e8;
-    padding-bottom: 16px;
-    margin-bottom: 24px;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #e4e4e7;
   }
-  
-  .main-header h1 {
+
+  .main-header h2 {
     margin: 0;
-    font-size: 24px;
-    color: #24292e;
+    font-size: 1.5rem;
   }
-  
+
   .main-header button {
-    padding: 8px 16px;
-    background-color: #fafbfc;
-    color: #24292e;
-    border: 1px solid #d1d5da;
+    padding: 0.5rem 1rem;
+    background-color: #f4f4f5;
+    border: 1px solid #d4d4d8;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
   }
-  
+
   .main-header button:hover {
-    background-color: #f3f4f6;
+    background-color: #e4e4e7;
   }
-  
+
   .articles-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    align-content: start;
+  }
+
+  .article-card {
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
 
-  /* Basic Card CSS for Articles */
-  .article-card {
-    border: 1px solid #e1e4e8;
-    border-radius: 6px;
-    padding: 20px;
-    background-color: #ffffff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    transition: box-shadow 0.2s ease;
+  .article-card .img-container {
+    width: 100%;
+    height: 160px;
+    background-color: #f4f4f5;
+  }
+
+  .article-card .img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .article-card-content {
+    padding: 1rem;
   }
   
-  .article-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  .article-card-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
   }
   
-  .article-card-title {
-    margin: 0 0 8px 0;
-    font-size: 18px;
-    color: #0366d6;
-    cursor: pointer;
-  }
-  
-  .article-card-summary {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    color: #444d56;
-    line-height: 1.5;
-  }
-  
-  .article-card-meta {
+  .article-card-content p {
     margin: 0;
-    font-size: 12px;
-    color: #6a737d;
+    font-size: 0.9rem;
+    color: #52525b;
   }
 </style>
-</head>
-<body>
 
-<div class="container">
-  <div class="sidebar">
-    <h2 class="sidebar-header">RSS Reader</h2>
-    
-    <div class="add-feed-controls">
-      <input type="url" placeholder="https://example.com/rss">
-      <button type="button">Add</button>
+<div class="app-container">
+  <aside class="sidebar">
+    <header>
+      <h1>RSS Reader</h1>
+    </header>
+
+    <div class="add-feed-form">
+      <input type="url" placeholder="https://example.com/feed.xml" aria-label="Add feed URL" />
+      <button id="btn-add" type="button">Submit</button>
     </div>
-    
+
     <ul class="nav-filters">
       <li>All</li>
       <li>Unread</li>
       <li>Bookmarked</li>
     </ul>
-    
+
     <div class="feeds-list"></div>
-  </div>
-  
-  <div class="main-content">
-    <div class="main-header">
-      <h1>All</h1>
-      <button type="button">Refresh</button>
-    </div>
-    
+  </aside>
+
+  <main class="main-content">
+    <header class="main-header">
+      <h2>All</h2>
+      <button id="btn-refresh" type="button">Refresh</button>
+    </header>
+
     <div class="articles-list"></div>
-  </div>
-</div>
-
-</body>
-</html><script>
-var rssFeeds = new Array();
-var rssState = new Object();
-
-(async function() {
-  var rawFeeds = await read('config/rss/feeds');
-  if(rawFeeds) rssFeeds = JSON.parse(rawFeeds);
-  
-  var rawState = await read('config/rss/state');
-  if(rawState) rssState = JSON.parse(rawState);
-})();
-
-window.saveFeeds = async function() {
-  await write(JSON.stringify(rssFeeds), 'config/rss/feeds');
-}
-
-window.saveState = async function() {
-  await write(JSON.stringify(rssState), 'config/rss/state');
-}
-</script><script>
-document.querySelector('.add-feed-controls button').addEventListener('click', function(event) {
-  event.preventDefault();
-  var input = document.querySelector('.add-feed-controls input[type="url"]');
-  var url = input.value;
-  if (url) {
-    rssFeeds.push(url);
-    if (typeof window.saveFeeds === 'function') {
-      window.saveFeeds();
+  </main>
+</div><script>
+  (async function() {
+    try {
+      window.rssFeeds = (await read('config/rss/feeds')) || [];
+    } catch (e) {
+      window.rssFeeds = [];
     }
-    input.value = '';
-    window.renderFeeds();
-  }
+
+    try {
+      window.rssState = (await read('config/rss/state')) || {};
+    } catch (e) {
+      window.rssState = {};
+    }
+
+    window.saveFeeds = async function() {
+      await write('config/rss/feeds', window.rssFeeds);
+    };
+
+    window.saveState = async function() {
+      await write('config/rss/state', window.rssState);
+    };
+  })();
+</script><script>
+window.renderSidebar = function() {
+  const container = document.querySelector('.feeds-list');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  if (!window.rssFeeds) return;
+  window.rssFeeds.forEach(function(feedUrl, i) {
+    const item = document.createElement('div');
+    item.style.display = 'flex';
+    item.style.flexDirection = 'column';
+    item.style.padding = '0.5rem';
+    item.style.marginBottom = '0.5rem';
+    item.style.background = '#fff';
+    item.style.borderRadius = '4px';
+    item.style.border = '1px solid #e4e4e7';
+    item.style.wordBreak = 'break-all';
+    item.style.fontSize = '0.875rem';
+
+    const text = document.createElement('span');
+    text.textContent = feedUrl;
+    text.style.marginBottom = '0.5rem';
+    
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'Delete';
+    delBtn.style.cursor = 'pointer';
+    delBtn.style.background = '#ef4444';
+    delBtn.style.color = '#fff';
+    delBtn.style.border = 'none';
+    delBtn.style.borderRadius = '4px';
+    delBtn.style.padding = '0.25rem 0.5rem';
+    delBtn.style.alignSelf = 'flex-start';
+    
+    delBtn.onclick = async function() {
+      window.rssFeeds.splice(i, 1);
+      if (window.saveFeeds) await window.saveFeeds();
+      window.renderSidebar();
+    };
+    
+    item.appendChild(text);
+    item.appendChild(delBtn);
+    container.appendChild(item);
+  });
+};
+
+document.getElementById('btn-add').addEventListener('click', async () => {
+    const input = document.querySelector('.add-feed-form input');
+    if (!input) return;
+    const val = input.value.trim();
+    if (val) {
+        window.rssFeeds = window.rssFeeds || [];
+        window.rssFeeds.push(val);
+        input.value = '';
+        if (window.saveFeeds) await window.saveFeeds();
+        window.renderSidebar();
+        if (window.fetchAll) await window.fetchAll();
+    }
 });
 
-window.renderFeeds = function() {
-  var list = document.querySelector('.feeds-list');
-  if (!list) return;
-  list.innerHTML = '';
-  for (var i = 0; i < rssFeeds.length; i++) {
-    (function(index) {
-      var url = rssFeeds[index];
-      var div = document.createElement('div');
-      div.style.display = 'flex';
-      div.style.justifyContent = 'space-between';
-      div.style.alignItems = 'center';
-      div.style.marginBottom = '8px';
-      div.style.padding = '8px';
-      div.style.backgroundColor = '#ffffff';
-      div.style.border = '1px solid #e1e4e8';
-      div.style.borderRadius = '4px';
-
-      var span = document.createElement('span');
-      span.textContent = url;
-      span.style.fontSize = '12px';
-      span.style.wordBreak = 'break-all';
-      span.style.color = '#24292e';
-      span.style.marginRight = '8px';
-
-      var btn = document.createElement('button');
-      btn.textContent = 'Delete';
-      btn.style.fontSize = '12px';
-      btn.style.padding = '4px 8px';
-      btn.style.backgroundColor = '#fafbfc';
-      btn.style.color = '#d73a49';
-      btn.style.border = '1px solid #e1e4e8';
-      btn.style.borderRadius = '4px';
-      btn.style.cursor = 'pointer';
-
-      btn.addEventListener('click', function() {
-        rssFeeds.splice(index, 1);
-        if (typeof window.saveFeeds === 'function') {
-          window.saveFeeds();
-        }
-        window.renderFeeds();
-      });
-
-      div.appendChild(span);
-      div.appendChild(btn);
-      list.appendChild(div);
-    })(i);
-  }
-};
-
 window.fetchAll = async function() {
-  var articles = [];
-  try {
-    for (var i = 0; i < rssFeeds.length; i++) {
-      var url = rssFeeds[i];
-      var response = await fetch(window.FOG_URL + '/proxy?url=' + encodeURIComponent(url));
-      if (!response.ok) {
-        throw new Error('Fetch failed for: ' + url);
-      }
-      
-      var text = await response.text();
-      var parser = new DOMParser();
-      var doc = parser.parseFromString(text, 'text/xml');
-      
-      var items = doc.querySelectorAll('item, entry');
-      for (var j = 0; j < items.length; j++) {
-        var item = items[j];
-        var titleNode = item.querySelector('title');
-        var linkNode = item.querySelector('link');
-        var pubDateNode = item.querySelector('pubDate, published, updated');
-        var descNode = item.querySelector('description, summary, content');
-        
-        var title = titleNode ? titleNode.textContent : '';
-        var link = '';
-        if (linkNode) {
-          link = linkNode.textContent || linkNode.getAttribute('href') || '';
-        }
-        var pubDate = pubDateNode ? pubDateNode.textContent : '';
-        var description = descNode ? descNode.textContent : '';
-        
-        articles.push({
-          title: title,
-          link: link,
-          pubDate: pubDate,
-          description: description
-        });
-      }
-    }
+    let masterArray = [];
+    const feeds = window.rssFeeds || [];
     
-    articles.sort(function(a, b) {
-      var dateA = new Date(a.pubDate).getTime() || 0;
-      var dateB = new Date(b.pubDate).getTime() || 0;
-      return dateB - dateA;
+    for (let i = 0; i < feeds.length; i++) {
+        const fUrl = feeds[i];
+        try {
+            const targetUrl = (typeof FOG_URL !== 'undefined') ? FOG_URL + encodeURIComponent(fUrl) : fUrl;
+            const res = await fetch(targetUrl);
+            if (!res.ok) continue;
+            const xmlText = await res.text();
+            
+            const dp = new DOMParser();
+            const doc = dp.parseFromString(xmlText, 'text/xml');
+            
+            const entries = doc.querySelectorAll('item, entry');
+            entries.forEach(node => {
+                const getTxt = (sel) => { 
+                    try { 
+                        let e = node.querySelector(sel); 
+                        return e ? e.textContent.trim() : ''; 
+                    } catch(e) {} 
+                    return ''; 
+                };
+                
+                const title = getTxt('title') || 'Untitled';
+                
+                let linkNode = node.querySelector('link');
+                let link = '';
+                if (linkNode) {
+                    if (linkNode.getAttribute('href')) link = linkNode.getAttribute('href');
+                    else link = linkNode.textContent.trim();
+                }
+                
+                let date = getTxt('pubDate') || getTxt('published') || getTxt('updated') || getTxt('date') || new Date().toISOString();
+                let desc = getTxt('description') || getTxt('summary');
+                
+                let image = null;
+                const getAttr = (sel, attr) => {
+                    try { 
+                        const el = node.querySelector(sel); 
+                        if (el) return el.getAttribute(attr); 
+                    } catch(e) {}
+                    return null;
+                };
+                
+                image = getAttr('enclosure', 'url') || 
+                        getAttr('media\\:thumbnail', 'url') || 
+                        getAttr('media\\:content', 'url') || 
+                        getAttr('media\\:content', 'src') || 
+                        getAttr('link[rel="enclosure"]', 'href') || 
+                        getAttr('link[rel="image"]', 'href') || 
+                        getAttr('link[type^="image"]', 'href') || 
+                        getAttr('itunes\\:image', 'href') || 
+                        getAttr('*\\:image', 'href') || 
+                        getAttr('thumbnail', 'url');
+                
+                if (!image) {
+                    image = getTxt('image > url') || getTxt('logo') || getTxt('icon') || getTxt('thumbnail > url');
+                }
+
+                if (!image) {
+                    let els = node.getElementsByTagName('*');
+                    for (let j = 0; j < els.length; j++) {
+                        let ln = els[j].localName || els[j].tagName.toLowerCase();
+                        let nn = els[j].nodeName.toLowerCase();
+                        if (ln === 'enclosure' || ln === 'thumbnail') image = els[j].getAttribute('url');
+                        if ((nn === 'media:thumbnail' || nn === 'media:content') && !image) image = els[j].getAttribute('url') || els[j].getAttribute('src');
+                        if (nn === 'link') {
+                            let rel = els[j].getAttribute('rel');
+                            let t = els[j].getAttribute('type');
+                            if (rel === 'enclosure' || rel === 'image' || (t && t.startsWith('image'))) image = els[j].getAttribute('href');
+                        }
+                        if ((nn === 'itunes:image' || nn.endsWith(':image')) && !image) image = els[j].getAttribute('href');
+                        if (image) break;
+                    }
+                }
+
+                if (!image) {
+                    let hParser = new DOMParser();
+                    let checkTags = ['description', 'content:encoded', 'content'];
+                    for (let tag of checkTags) {
+                        let els = node.getElementsByTagName(tag);
+                        for (let j = 0; j < els.length; j++) {
+                            let html = els[j].textContent;
+                            if (html && html.includes('<img')) {
+                                try {
+                                    let hd = hParser.parseFromString(html, 'text/html');
+                                    let img = hd.querySelector('img');
+                                    if (img && img.src) {
+                                        image = img.src;
+                                        break;
+                                    }
+                                } catch(e) {}
+                            }
+                        }
+                        if (image) break;
+                    }
+                }
+
+                masterArray.push({ title, link, date, description: desc, image, feedSource: fUrl });
+            });
+        } catch(e) {}
+    }
+
+    masterArray.sort((a,b) => {
+        let da = new Date(a.date).getTime();
+        let db = new Date(b.date).getTime();
+        da = isNaN(da) ? 0 : da;
+        db = isNaN(db) ? 0 : db;
+        return db - da; 
     });
-    
-    if (typeof write === 'function') {
-      await write(JSON.stringify(articles), 'config/rss/cache');
-    }
-    return articles;
-  } catch (error) {
-    try {
-      if (typeof read === 'function') {
-        var cached = await read('config/rss/cache');
-        if (cached) {
-          return JSON.parse(cached);
-        }
-      }
-    } catch (e) {}
-    return [];
-  }
-};
-</script><script>
-window.renderArticles = async function(filterName) {
-  var rawCache = await read('config/rss/cache');
-  var cached = JSON.parse(rawCache || '[]');
-  
-  var list = document.querySelector('.articles-list');
-  if (list) {
-    list.innerHTML = '';
-  }
-  
-  var header = document.querySelector('.main-header h1');
-  if (header) {
-    header.textContent = filterName;
-  }
 
-  for (var i = 0; i < cached.length; i++) {
-    var article = cached[i];
-    var link = article.link || article.title;
-    
-    if (!rssState[link]) {
-      rssState[link] = { read: false, bookmarked: false };
+    if (typeof write !== 'undefined') {
+        try {
+            await write('config/rss/cache', masterArray);
+        } catch(e) {}
+        try {
+            await write(masterArray, 'config/rss/cache');
+        } catch(e) {}
     }
-    
-    var state = rssState[link];
-    
-    if (filterName === 'Unread' && state.read) {
-      continue;
-    }
-    
-    if (filterName === 'Bookmarked' && !state.bookmarked) {
-      continue;
-    }
-    
-    var card = document.createElement('div');
-    card.className = 'article-card';
-    
-    var title = document.createElement('h3');
-    title.className = 'article-card-title';
-    var titleLink = document.createElement('a');
-    titleLink.href = link;
-    titleLink.target = '_blank';
-    titleLink.textContent = article.title;
-    titleLink.style.textDecoration = 'none';
-    titleLink.style.color = 'inherit';
-    title.appendChild(titleLink);
-    
-    var meta = document.createElement('p');
-    meta.className = 'article-card-meta';
-    meta.textContent = article.pubDate || '';
-    
-    var summary = document.createElement('p');
-    summary.className = 'article-card-summary';
-    var tmp = document.createElement('div');
-    tmp.innerHTML = article.description || '';
-    var textContent = tmp.textContent || tmp.innerText || '';
-    summary.textContent = textContent.length > 250 ? textContent.substring(0, 250) + '...' : textContent;
-    
-    var controls = document.createElement('div');
-    controls.style.display = 'flex';
-    controls.style.gap = '8px';
-    controls.style.marginTop = '12px';
-    
-    var btnStyle = 'padding: 6px 12px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid #d1d5da; border-radius: 4px; background-color: #fafbfc; color: #24292e;';
-    
-    var btnRead = document.createElement('button');
-    btnRead.textContent = state.read ? 'Mark Unread' : 'Mark Read';
-    btnRead.style.cssText = btnStyle;
-    btnRead.onclick = (function(id, currentFilter) {
-      return async function() {
-        rssState[id].read = !rssState[id].read;
-        if (typeof window.saveState === 'function') {
-          await window.saveState();
-        }
-        window.renderArticles(currentFilter);
-      };
-    })(link, filterName);
-    
-    var btnBookmark = document.createElement('button');
-    btnBookmark.textContent = state.bookmarked ? 'Unbookmark' : 'Bookmark';
-    btnBookmark.style.cssText = btnStyle;
-    btnBookmark.onclick = (function(id, currentFilter) {
-      return async function() {
-        rssState[id].bookmarked = !rssState[id].bookmarked;
-        if (typeof window.saveState === 'function') {
-          await window.saveState();
-        }
-        window.renderArticles(currentFilter);
-      };
-    })(link, filterName);
-    
-    controls.appendChild(btnRead);
-    controls.appendChild(btnBookmark);
-    
-    card.appendChild(title);
-    card.appendChild(meta);
-    card.appendChild(summary);
-    card.appendChild(controls);
-    
-    list.appendChild(card);
-  }
 };
 
-var navFilters = document.querySelectorAll('.nav-filters li');
-for (var j = 0; j < navFilters.length; j++) {
-  navFilters[j].addEventListener('click', function(e) {
-    var filterName = e.target.textContent;
-    window.renderArticles(filterName);
-  });
-}
-
-var refreshBtn = document.querySelector('.main-header button');
-if (refreshBtn) {
-  refreshBtn.addEventListener('click', async function() {
-    var originalText = refreshBtn.textContent;
-    refreshBtn.textContent = 'Refreshing...';
-    try {
-      if (typeof window.fetchAll === 'function') {
-        await window.fetchAll();
-      }
-    } catch (err) {}
-    refreshBtn.textContent = originalText;
-    window.renderArticles('All');
-  });
-}
-
-setTimeout(function() {
-  if (typeof window.renderFeeds === 'function') {
-    window.renderFeeds();
-  }
-  window.renderArticles('All');
+setTimeout(() => {
+    window.renderSidebar();
 }, 100);
+</script><script>
+window.renderArticles = async function() {
+    let cache = [];
+    try {
+        if (typeof read !== 'undefined') {
+            cache = (await read('config/rss/cache')) || [];
+        }
+    } catch (e) {
+        cache = [];
+    }
+
+    if (!window.rssState) window.rssState = {};
+    if (!window.rssState.read) window.rssState.read = {};
+    if (!window.rssState.bookmarked) window.rssState.bookmarked = {};
+    if (!window.rssState.filter) window.rssState.filter = 'All';
+
+    const filter = window.rssState.filter;
+    
+    const container = document.querySelector('.articles-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    cache.forEach(article => {
+        const isRead = !!window.rssState.read[article.link];
+        const isBookmarked = !!window.rssState.bookmarked[article.link];
+
+        if (filter === 'Unread' && isRead) return;
+        if (filter === 'Bookmarked' && !isBookmarked) return;
+
+        const card = document.createElement('div');
+        card.className = 'article-card';
+
+        if (article.image) {
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'img-container';
+            const img = document.createElement('img');
+            img.src = article.image;
+            img.loading = 'lazy';
+            imgContainer.appendChild(img);
+            card.appendChild(imgContainer);
+        }
+
+        const content = document.createElement('div');
+        content.className = 'article-card-content';
+
+        const title = document.createElement('h3');
+        title.textContent = article.title || 'Untitled';
+        
+        const desc = document.createElement('p');
+        const dp = new DOMParser();
+        const doc = dp.parseFromString(article.description || '', 'text/html');
+        const textDesc = doc.body.textContent || '';
+        desc.textContent = textDesc.substring(0, 150) + (textDesc.length > 150 ? '...' : '');
+
+        const controls = document.createElement('div');
+        controls.style.marginTop = '1rem';
+        controls.style.display = 'flex';
+        controls.style.flexWrap = 'wrap';
+        controls.style.gap = '0.5rem';
+
+        const readBtn = document.createElement('button');
+        readBtn.textContent = isRead ? 'Mark Unread' : 'Mark Read';
+        readBtn.style.padding = '0.4rem 0.8rem';
+        readBtn.style.border = '1px solid #d4d4d8';
+        readBtn.style.borderRadius = '4px';
+        readBtn.style.backgroundColor = isRead ? '#e4e4e7' : '#ffffff';
+        readBtn.style.cursor = 'pointer';
+        readBtn.style.fontSize = '0.85rem';
+        readBtn.onclick = async () => {
+            if (isRead) {
+                delete window.rssState.read[article.link];
+            } else {
+                window.rssState.read[article.link] = true;
+            }
+            if (window.saveState) await window.saveState();
+            await window.renderArticles();
+        };
+
+        const bookmarkBtn = document.createElement('button');
+        bookmarkBtn.textContent = isBookmarked ? 'Unbookmark' : 'Bookmark';
+        bookmarkBtn.style.padding = '0.4rem 0.8rem';
+        bookmarkBtn.style.border = '1px solid #d4d4d8';
+        bookmarkBtn.style.borderRadius = '4px';
+        bookmarkBtn.style.backgroundColor = isBookmarked ? '#fef08a' : '#ffffff';
+        bookmarkBtn.style.cursor = 'pointer';
+        bookmarkBtn.style.fontSize = '0.85rem';
+        bookmarkBtn.onclick = async () => {
+            if (isBookmarked) {
+                delete window.rssState.bookmarked[article.link];
+            } else {
+                window.rssState.bookmarked[article.link] = true;
+            }
+            if (window.saveState) await window.saveState();
+            await window.renderArticles();
+        };
+
+        const linkBtn = document.createElement('a');
+        linkBtn.href = article.link;
+        linkBtn.target = '_blank';
+        linkBtn.textContent = 'Open →';
+        linkBtn.style.padding = '0.4rem 0.8rem';
+        linkBtn.style.border = '1px solid #d4d4d8';
+        linkBtn.style.borderRadius = '4px';
+        linkBtn.style.backgroundColor = '#2563eb';
+        linkBtn.style.color = '#ffffff';
+        linkBtn.style.textDecoration = 'none';
+        linkBtn.style.fontSize = '0.85rem';
+        linkBtn.style.display = 'inline-flex';
+        linkBtn.style.alignItems = 'center';
+
+        controls.appendChild(readBtn);
+        controls.appendChild(bookmarkBtn);
+        controls.appendChild(linkBtn);
+
+        content.appendChild(title);
+        content.appendChild(desc);
+        content.appendChild(controls);
+
+        card.appendChild(content);
+        container.appendChild(card);
+    });
+
+    const mainTitle = document.querySelector('.main-header h2');
+    if (mainTitle) {
+        mainTitle.textContent = filter;
+    }
+};
+
+document.querySelectorAll('.nav-filters li').forEach(li => {
+    li.addEventListener('click', async () => {
+        if (!window.rssState) window.rssState = {};
+        window.rssState.filter = li.textContent.trim();
+        if (window.saveState) await window.saveState();
+        await window.renderArticles();
+    });
+});
+
+const refreshBtn = document.getElementById('btn-refresh');
+if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+        const originalText = refreshBtn.textContent;
+        refreshBtn.textContent = 'Refreshing...';
+        refreshBtn.disabled = true;
+        if (window.fetchAll) await window.fetchAll();
+        await window.renderArticles();
+        refreshBtn.textContent = originalText;
+        refreshBtn.disabled = false;
+    });
+}
+
+(async function() {
+    if (window.renderSidebar) window.renderSidebar();
+    if (window.fetchAll) await window.fetchAll();
+    if (window.renderArticles) await window.renderArticles();
+})();
 </script>

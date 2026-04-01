@@ -1,0 +1,125 @@
+#agent2?e&w&p=TASK: output HTML wireframe for an autonomous agent
+- CRITICAL: Output ONLY raw HTML elements. DO NOT use markdown or backticks.
+- DO NOT include html/head/body tags.
+- DO NOT include any script or style tags.
+- component 1: header containing inputs for model-name, host, and apikey (type=password).
+- component 2: split-view container using flex row.
+- inside split-view: left-panel (for agent thinking log) and right-panel (for user chat and final answers).
+- component 3: footer containing a textarea (id=user-input), a submit button (id=submit-btn), and a stop button (id=stop-btn, type=button).
+&w&a=1&p=TASK: output exactly ONE SCRIPT TAG initializing global state
+- CRITICAL: Output MUST be wrapped in <script> tags. DO NOT use markdown.
+- read the value of localStorage.getItem('m') and store it in the model-name DOM input.
+- do the same for localStorage.getItem('h') into the host input.
+- do the same for localStorage.getItem('k') into the apikey input.
+- create a global array: window.chatHistory = []
+- create a global object: window.agentState = { phase: 'INIT', queue: [], done: [], extracted: '', iteration: 0 }
+- create a global boolean: window.stopAgent = false
+- use var for all variable declarations.
+&w&a=1&p=TASK: output exactly ONE SCRIPT TAG creating UI helper functions
+- CRITICAL: Output MUST be wrapped in <script> tags. DO NOT use markdown.
+- create function printLeft(text, isObservation)
+- inside printLeft: create a div, set whiteSpace to 'pre-wrap'.
+- inside printLeft: if isObservation is true, set the div text color to '%23aa5500'.
+- inside printLeft: append the text to the div, then append the div to the left-panel DOM element.
+- create function printRight(text)
+- inside printRight: create a div, set whiteSpace to 'pre-wrap', set fontWeight to 'bold'.
+- inside printRight: append the text to the div, then append the div to the right-panel DOM element.
+- scroll both panels to the bottom when new content is added.
+- use var for all variable declarations.
+&w&a=1&p=TASK: output exactly ONE SCRIPT TAG defining base tools
+- CRITICAL: Output MUST be wrapped in <script> tags. DO NOT use markdown.
+- the global functions read(link, db) and keys(query, db) are available to you.
+- create global object window.BaseTools = {}
+- add property "read_file" to window.BaseTools.
+- read_file needs a description string: "Reads a file. Input MUST be namespace%23filename or just filename"
+- read_file needs a run function: async function(input)
+- inside read_file run: var d = null; var k = input;
+- inside read_file run: if input includes '\x23', split it by '\x23'. assign parts[0] to d and parts[1] to k.
+- inside read_file run: return await read(k, d || db) || "File not found"
+- add property "list_files" to window.BaseTools.
+- list_files needs a description string: "Lists files. Input can be a namespace string, or empty for the current database."
+- list_files needs a run function: async function(input)
+- inside list_files run: var targetDb = input %3F await getDB(input) : db; return JSON.stringify(await keys(undefined, targetDb));
+- use var for all variable declarations.
+&w&a=1&p=TASK: output exactly ONE SCRIPT TAG creating the plugin registry
+- CRITICAL: Output MUST be wrapped in <script> tags. DO NOT use markdown.
+- create global object window.AgentPlugins = {}
+- create function window.registerPlugin(name, plugin) that assigns plugin to window.AgentPlugins[name].
+- create async function window.applyPlugins(state, context)
+- inside applyPlugins: loop through Object.values(window.AgentPlugins).
+- inside applyPlugins: if the plugin has a 'transform' method, set state = await plugin.transform(state, context).
+- inside applyPlugins: return the state.
+- use var for all variable declarations.
+&w&a=1&p=TASK: output exactly ONE SCRIPT TAG creating dynamic tool executor
+- CRITICAL: Output MUST be wrapped in <script> tags. DO NOT use markdown.
+- create global async function window.executeTool(toolName, toolInput)
+- start a try / catch block.
+- inside try: if window.BaseTools[toolName] exists, return await window.BaseTools[toolName].run(toolInput);
+- inside try: else, var code = await read(toolName) || "";
+- inside try: if code is empty, throw new Error("Tool not found");
+- inside try: CRITICAL: evaluate the dynamic code EXACTLY using this syntax: return await new Function('INPUT', 'return (async () => {' %2B code %2B '})()')(toolInput);
+- inside catch: return a string "Tool Execution Error: " %2B err.message;
+- use var for all variable declarations.
+&w&a=1&p=TASK: output exactly ONE SCRIPT TAG creating a tool string builder
+- CRITICAL: Output MUST be wrapped in <script> tags. DO NOT use markdown.
+- create global async function window.getActiveToolsString()
+- inside function: var lines = [];
+- loop through Object.keys(window.BaseTools). push a string formatted as "name: description" into lines.
+- var matchedKeys = await keys(IDBKeyRange.bound('tool', 'tool\\uffff'));
+- loop through matchedKeys. var code = await read(key).
+- if code exists, use regex to extract the description from the top block comment (/* ... */).
+- push the dynamic tool name and extracted description into lines.
+- return lines.join('\n');
+- use var for all variable declarations.
+&w&a=1&p=TASK: output exactly ONE SCRIPT TAG creating an LLM fetch helper
+- CRITICAL: Output MUST be wrapped in <script> tags. DO NOT use markdown.
+- create global async function window.fetchAI(systemPrompt)
+- inside function: read the DOM input values for model-name, host, and apikey.
+- save those 3 values to localStorage as 'm', 'h', and 'k'.
+- create an array called messages. The first item is an object { role: 'system', content: systemPrompt }.
+- concatenate window.chatHistory to the messages array.
+- create a headers object with 'Content-Type': 'application/json'.
+- if apikey exists, add 'Authorization': 'Bearer ' %2B apikey to headers.
+- execute fetch to the host URL using method POST, headers, and body: JSON.stringify({ model: document.getElementById('model-name').value, messages: messages, stream: false }).
+- parse the JSON response. return the text content from response.choices[0].message.content (or fallback to response.message.content).
+- use var for all variable declarations.
+&w&a=1&p=TASK: output exactly ONE SCRIPT TAG creating regex parsers
+- CRITICAL: Output MUST be wrapped in <script> tags. DO NOT use markdown.
+- create function window.parseAction(text)
+- inside parseAction: match regex for <<ACTION:\s*([^>]+)>> followed by a newline and the rest of the text until << or end of string.
+- inside parseAction: if matched, return an object { name: match[1].trim(), input: match[2].trim() }. else return null.
+- create function window.parseAnswer(text)
+- inside parseAnswer: match regex for <<ANSWER>> followed by a newline and the rest of the text.
+- inside parseAnswer: if matched, return the extracted text string. else return null.
+- use var for all variable declarations.
+&w&a=1&c=src&p=TASK: output exactly ONE SCRIPT TAG creating the core agent loop
+- CRITICAL: Output MUST be wrapped in <script> tags. DO NOT use markdown.
+- create global async function window.runAgent(userMessage)
+- inside runAgent: reset window.agentState to { phase: 'INIT', queue: [], done: [], extracted: '', iteration: 0 }.
+- call printRight(userMessage). push { role: 'user', content: userMessage } to window.chatHistory.
+- var errorCount = 0; var lastObservation = "";
+- start an infinite while(true) loop.
+- inside loop: window.agentState.iteration%2B%2B;
+- inside loop: var toolsString = await window.getActiveToolsString();
+- inside loop: window.agentState = await window.applyPlugins(window.agentState, { userMessage });
+- inside loop: build var systemPrompt = "You are an autonomous AI agent. DO NOT converse. ONLY output ONE format:\n<<ACTION: toolName>>\ninput\nOR\n<<ANSWER>>\ntext\n\nTOOLS:\n" %2B toolsString %2B "\n\nSTATE:\n" %2B JSON.stringify(window.agentState);
+- inside loop: if lastObservation is not empty, append "\nLAST OBSERVATION (Ephemeral):\n" %2B lastObservation to systemPrompt.
+- inside loop: if window.stopAgent is true, append "\nUSER OVERRIDE: Stop immediately. Output <<ANSWER>>." to systemPrompt, and set window.stopAgent = false.
+- inside loop: var aiResponse = await window.fetchAI(systemPrompt).
+- inside loop: call printLeft(aiResponse, false).
+- inside loop: var action = window.parseAction(aiResponse).
+- inside loop: if action exists, var result = await window.executeTool(action.name, action.input). call printLeft("OBSERVATION: " %2B result, true). set lastObservation = result. if action.name is 'read_file', push action.input to window.agentState.done. continue loop.
+- inside loop: var answer = window.parseAnswer(aiResponse).
+- inside loop: if answer exists, call printRight(answer). push { role: 'assistant', content: answer } to window.chatHistory. break loop.
+- fallback: if neither matched, push { role: 'system', content: 'SYSTEM WARNING: Do not converse. You MUST output <<ACTION: name>> or <<ANSWER>>.' } to window.chatHistory. set lastObservation = "". continue loop.
+- wrap loop contents in try/catch. on catch: errorCount%2B%2B, call printLeft("Error: " %2B e.message, true), break loop if errorCount >= 7.
+- use var for all variables.
+&w&a=1&p=TASK: output exactly ONE SCRIPT TAG binding UI events
+- CRITICAL: Output MUST be wrapped in <script> tags. DO NOT use markdown.
+- get DOM element for the submit button and the textarea.
+- create function handleSubmit(e) that calls preventDefault(), checks if textarea is empty, calls window.runAgent(textarea.value), and clears the textarea.
+- add click event listener to submit button calling handleSubmit.
+- add keydown event listener to textarea. if e.ctrlKey and e.key === 'Enter', call handleSubmit.
+- get DOM element for the stop button. add click listener that sets window.stopAgent = true.
+- use var for all variable declarations.
+&w

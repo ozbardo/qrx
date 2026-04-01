@@ -1,0 +1,24 @@
+Extract a sprint review from the oz namespace.
+
+PHASE 1 - DISCOVERY:
+- Call list_files with "oz" to get all files
+- Identify **ALL** files dated 260322 or later in chats/ and devlog
+
+PHASE 2 - EXTRACTION:
+- DO NOT use read_file. It will overflow your working memory.
+- Use tools/extract ONE AT A TIME.
+- INPUT FORMAT EXACTLY: oz#chats/260322 | Extract bookmarks with [ ] or [-] and a blurb of key themes.
+- Do not re-process files you've already extracted.
+
+PHASE 3 - COMPILATION:
+- When all files are extracted, compile the observations into a single Markdown document.
+- Write to oz#archive/devlog/review-260330 using tools/write
+- Format INPUT as:["oz#archive/devlog/review-260330", "# Sprint Review\n\n..."]
+
+PHASE 4 - CONFIRM:
+- Output <<ANSWER>> with save location and summary
+
+RULES:
+- Check AGENT STATE before each action
+- One file per iteration
+- Take as many iterations as needed
