@@ -1,0 +1,9 @@
+[submodule "public/data/oz"]
+	path = public/data/oz
+	url = /home/qrx/git/$/oz.git
+[submodule "public/data/wiki"]
+	path = public/data/wiki
+	url = /home/qrx/git/$/wiki.git
+[submodule "public/data/cache"]
+	path = public/data/cache
+	url = /home/qrx/git/$/cache.git
