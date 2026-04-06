@@ -114,7 +114,6 @@ async function fetchAndParse(targetUrl, queryParams) {
       const response = await axios.get(targetUrl, { headers, timeout: 15000, responseType: 'arraybuffer' });
       const contentType = (response.headers['content-type'] || '').toLowerCase();
 
-      // --- THE FIX: Let XML/RSS pass through untouched! ---
       if (contentType.includes('xml') || contentType.includes('rss') || contentType.includes('json')) {
         console.log(`[Proxy] Raw data (XML/JSON) detected. Bypassing Readability: ${targetUrl}`);
         const content = Buffer.from(response.data).toString('utf-8');
@@ -225,12 +224,17 @@ async function updateDataIndex() {
     let results =[];
     const namespaces = await readdir(DATA_DIR, { withFileTypes: true });
     
+    // Ignore heavy or system folders
+    const IGNORE_LIST = ['.DS_Store', '.git', 'node_modules'];
+
     for (let ns of namespaces) {
-      if (!ns.isDirectory()) continue;
+      if (!ns.isDirectory() || IGNORE_LIST.includes(ns.name)) continue;
+      
       async function walk(currentDir, currentPath) {
         const entries = await readdir(currentDir, { withFileTypes: true });
         for (let e of entries) {
-          if (e.name === '.DS_Store') continue;
+          if (IGNORE_LIST.includes(e.name)) continue;
+          
           const itemPath = currentPath ? `${currentPath}/${e.name}` : e.name;
           if (e.isDirectory()) await walk(join(currentDir, e.name), itemPath);
           else results.push(`${ns.name}/${itemPath}`);
