@@ -1,4 +1,4 @@
-#agent2?e&w&p=TASK: output HTML wireframe for an autonomous agent
+#agent?e&w&p=TASK: output HTML wireframe for an autonomous agent
 - components:
 - header (inputs for model-name, host, apikey type=password)
 - split-view container (use flex row)
@@ -72,10 +72,10 @@
 - inside loop: console.log("3. AI Raw Response:\n", aiResponse);
 - inside loop: call printLeft(aiResponse, false). push { role: 'assistant', content: aiResponse } to window.chatHistory.
 - inside loop: var action = window.parseAction(aiResponse);
-- inside loop: if action exists: console.log("4. Executing Action:", action); var result = await window.executeTool(action.name, action.input); console.log("5. Tool Result:", result); call printLeft("OBSERVATION:\n" %2B result, true); push { role: 'system', content: "OBSERVATION:\n" %2B result } to window.chatHistory; continue loop;
+- inside loop: if action exists: console.log("4. Executing Action:", action); var result = await window.executeTool(action.name, action.input); console.log("5. Tool Result:", result); call printLeft("OBSERVATION:\n" %2B result, true); push { role: 'user', content: "OBSERVATION:\n" %2B result } to window.chatHistory; continue loop;
 - inside loop: var answer = window.parseAnswer(aiResponse);
 - inside loop: if answer exists: console.log("4. Loop Finished. Answer:", answer); call printRight(answer); break loop;
-- inside loop (fallback): console.warn("4. Syntax Fallback Triggered. AI failed to use <<ACTION>> or <<ANSWER>>."); push { role: 'system', content: 'SYSTEM WARNING: You MUST output <<ACTION: name>> or <<ANSWER>>. NO XML. DO NOT USE <tool_call> tags.' } to window.chatHistory; continue loop;
+- inside loop (fallback): console.warn("4. Syntax Fallback Triggered. AI failed to use <<ACTION>> or <<ANSWER>>."); push { role: 'user', content: 'SYSTEM WARNING: You MUST output <<ACTION: name>> or <<ANSWER>>. NO XML. DO NOT USE <tool_call> tags.' } to window.chatHistory; continue loop;
 - wrap loop in try/catch. on catch: errorCount%2B%2B, console.error("Agent Loop Error:", e), printLeft("Error: " %2B e.message, true), break loop if errorCount >= 7.
 - use var for all variable declarations
 &w&a=1&p=TASK: output a SCRIPT tag binding UI events
