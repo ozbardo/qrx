@@ -1172,4 +1172,57 @@
     }
   };
 })();
+</script><script>
+window.addEventListener('keydown', function(event) {
+  if (event.ctrlKey && (event.code === 'Space' || event.key === ' ')) {
+    event.preventDefault();
+    var inputs = document.querySelectorAll('input');
+    for (var i = 0; i < inputs.length; i++) {
+      if (inputs[i].value && inputs[i].value.endsWith('run')) {
+        inputs[i].focus();
+        return;
+      }
+    }
+    var elements = document.querySelectorAll('*');
+    for (var j = 0; j < elements.length; j++) {
+      var text = elements[j].textContent || '';
+      var cleanedText = text.replace('📄', '').trim();
+      if (cleanedText === 'run') {
+        elements[j].click();
+        setTimeout(function() {
+          var newInputs = document.querySelectorAll('input');
+          for (var k = 0; k < newInputs.length; k++) {
+            if (newInputs[k].value && newInputs[k].value.endsWith('run')) {
+              newInputs[k].focus();
+              return;
+            }
+          }
+        }, 100);
+        return;
+      }
+    }
+  }
+});
+</script><script>
+(async function() {
+  try {
+    var response = await fetch('/data/index.json');
+    var data = await response.json();
+    var datalist = document.createElement('datalist');
+    datalist.id = 'sys-file-list';
+    for (var i = 0; i < data.length; i++) {
+      var item = data[i];
+      var modifiedItem = item.replace('/', '\x23');
+      var option = document.createElement('option');
+      option.value = modifiedItem;
+      datalist.appendChild(option);
+    }
+    document.body.appendChild(datalist);
+    document.addEventListener('focusin', function(event) {
+      if (event.target && event.target.tagName === 'INPUT') {
+        event.target.setAttribute('list', 'sys-file-list');
+      }
+    });
+  } catch (err) {}
+})();
 </script>

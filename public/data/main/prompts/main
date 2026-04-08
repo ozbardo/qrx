@@ -76,4 +76,18 @@
   - if el is an INPUT or TEXTAREA: console.log("Target found!", el), then append the transcript (adding a leading space if needed), update el.value, and dispatch a new Event('input', { bubbles: true })
   - if el is NOT an input/textarea: console.warn("Active element is not a text field. Text discarded.")
   - wrap in an async IIFE and use var for all variables
+&w&a=1&p=TASK: output a SCRIPT tag that binds Ctrl+Space to open or focus the run window
+  - add a keydown event listener to the window
+  - if event.ctrlKey is true and (event.code is 'Space' or event.key is ' ')
+  - call event.preventDefault()
+  - FIRST, prevent duplicates: search the DOM for an input field whose value ends with 'run'
+  - if found, call .focus() on it and return
+  - IF NOT FOUND, we must use the existing UI to spawn it so all event listeners attach correctly
+  - query the DOM for all file icon elements
+  - loop through them, get their textContent, replace the '📄' character, and trim whitespace
+  - if the cleaned text exactly equals 'run', call .click() on that element
+  - then use setTimeout for 100ms
+  - inside the timeout, search the DOM again for the newly spawned input field whose value ends with 'run'
+  - if found, call .focus() on it
+  - use var for all variables
 &w
